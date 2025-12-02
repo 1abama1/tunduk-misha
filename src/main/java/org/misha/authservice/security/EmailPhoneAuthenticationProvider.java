@@ -1,5 +1,6 @@
 package org.misha.authservice.security;
 
+import lombok.RequiredArgsConstructor;
 import org.misha.authservice.entity.User;
 import org.misha.authservice.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -10,17 +11,15 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+@Component
+@RequiredArgsConstructor
 public class EmailPhoneAuthenticationProvider implements AuthenticationProvider {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public EmailPhoneAuthenticationProvider(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {

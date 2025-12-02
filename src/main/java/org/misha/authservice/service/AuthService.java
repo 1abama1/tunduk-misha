@@ -2,14 +2,17 @@ package org.misha.authservice.service;
 
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.UserRegistrationDTO;
+import org.misha.authservice.entity.RefreshToken;
 import org.misha.authservice.entity.User;
+import org.misha.authservice.exception.AppException;
+import org.misha.authservice.repository.RefreshTokenRepository;
 import org.misha.authservice.repository.UserRepository;
 import org.misha.authservice.security.JwtUtil;
-import org.misha.authservice.entity.RefreshToken;
-import org.misha.authservice.repository.RefreshTokenRepository;
-import java.time.Duration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -21,17 +24,17 @@ public class AuthService {
 
     public User register(UserRegistrationDTO dto) {
         if ((dto.getEmail() == null || dto.getEmail().isBlank()) && (dto.getPhone() == null || dto.getPhone().isBlank())) {
-            throw new IllegalArgumentException("Either email or phone must be provided");
+            throw new AppException("LOGIN_IDENTIFIER_REQUIRED", "Either email or phone must be provided", HttpStatus.BAD_REQUEST);
         }
         if (dto.getPassword() == null || dto.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Password is required");
+            throw new AppException("PASSWORD_REQUIRED", "Password is required", HttpStatus.BAD_REQUEST);
         }
 
         if (dto.getEmail() != null && !dto.getEmail().isBlank() && userRepository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("Email already in use");
+            throw new AppException("EMAIL_EXISTS", "Email already in use", HttpStatus.CONFLICT);
         }
         if (dto.getPhone() != null && !dto.getPhone().isBlank() && userRepository.existsByPhone(dto.getPhone())) {
-            throw new IllegalArgumentException("Phone already in use");
+            throw new AppException("PHONE_EXISTS", "Phone already in use", HttpStatus.CONFLICT);
         }
 
         User user = User.builder()
@@ -42,26 +45,6 @@ public class AuthService {
                 .build();
 
         return userRepository.save(user);
-    }
-
-    public String login(String inn, String email, String phone, String password) {
-        User user = null;
-        if (email != null && !email.isBlank()) {
-            user = userRepository.findByEmail(email).orElse(null);
-        }
-        if (user == null && phone != null && !phone.isBlank()) {
-            user = userRepository.findByPhone(phone).orElse(null);
-        }
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
-
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        // Use userId as subject for future-proofing
-        return jwtUtil.generateAccessToken(String.valueOf(user.getId()));
     }
 
     public String issueTokenForUser(User user) {

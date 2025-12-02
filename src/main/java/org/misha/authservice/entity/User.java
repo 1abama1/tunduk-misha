@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "users")
@@ -34,9 +36,16 @@ public class User {
 
     private boolean simpleMode;
 
-    // KYC uploaded file paths
-    private String passportFrontPath;
-    private String passportBackPath;
-    private String selfieWithPassportPath;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private Role role = Role.ADMIN;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_tags", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tag")
+    @Builder.Default
+    private List<Tag> tags = new ArrayList<>();
 }
 

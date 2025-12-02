@@ -1,0 +1,30 @@
+package org.misha.authservice.repository;
+
+import org.misha.authservice.entity.RentalDocument;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface RentalDocumentRepository extends JpaRepository<RentalDocument, Long> {
+
+    List<RentalDocument> findByClientId(Long clientId);
+
+    @Query("SELECT d FROM RentalDocument d WHERE d.client.id = :clientId AND d.closedAt IS NULL AND d.terminatedAt IS NULL")
+    List<RentalDocument> findActiveContractsByClientId(@Param("clientId") Long clientId);
+
+    List<RentalDocument> findByContractNumberContainingIgnoreCase(String contract);
+
+    boolean existsByContractNumber(String contractNumber);
+
+    @Query("SELECT DISTINCT d FROM RentalDocument d LEFT JOIN FETCH d.tools t LEFT JOIN FETCH t.template tmpl LEFT JOIN FETCH tmpl.category")
+    List<RentalDocument> findAllWithTools();
+
+    @Query("SELECT DISTINCT d FROM RentalDocument d LEFT JOIN FETCH d.tools t LEFT JOIN FETCH t.template tmpl LEFT JOIN FETCH tmpl.category WHERE d.id = :id")
+    Optional<RentalDocument> findByIdWithTools(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT d FROM RentalDocument d LEFT JOIN FETCH d.tools t LEFT JOIN FETCH t.template tmpl LEFT JOIN FETCH tmpl.category WHERE d.id IN :ids")
+    List<RentalDocument> findByIdsWithTools(@Param("ids") List<Long> ids);
+}
