@@ -14,6 +14,7 @@ import org.misha.authservice.service.AdminClientService;
 import org.misha.authservice.service.ClientCardService;
 import org.misha.authservice.service.ClientImageService;
 import org.misha.authservice.service.ClientService;
+import org.misha.authservice.service.ExcelClientImportService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,7 @@ public class AdminClientController {
     private final ClientCardService clientCardService;
     private final ClientImageService clientImageService;
     private final ClientImageRepository clientImageRepository;
+    private final ExcelClientImportService excelClientImportService;
 
     @GetMapping("/search")
     public ResponseEntity<List<ClientSearchResultDto>> searchClients(
@@ -62,6 +64,11 @@ public class AdminClientController {
     @PostMapping("/create")
     public ResponseEntity<ClientDto> createClient(@RequestBody CreateClientRequest req) {
         return ResponseEntity.ok(clientService.create(req));
+    }
+
+    @PostMapping("/import/excel")
+    public ResponseEntity<ClientDto> importFromExcel(@RequestParam MultipartFile file) throws java.io.IOException {
+        return ResponseEntity.ok(excelClientImportService.importClient(file));
     }
 
     @GetMapping("/{id}")

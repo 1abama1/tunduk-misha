@@ -7,7 +7,8 @@ public record PassportDto(
         String number,
         String issuedBy,
         String subdivisionCode,
-        LocalDate issueDate
+        LocalDate issueDate,
+        String inn
 ) {
 }
 

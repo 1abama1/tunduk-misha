@@ -167,7 +167,8 @@ public class AdminClientService {
                         doc.getClosedAt(),
                         doc.getTerminatedAt(),
                         doc.getTerminationReason(),
-                        doc.getStatus()
+                        doc.getStatus(),
+                        doc.getComment()
                 ))
                 .toList();
     }
@@ -191,7 +192,8 @@ public class AdminClientService {
                         doc.getClosedAt(),
                         doc.getTerminatedAt(),
                         doc.getTerminationReason(),
-                        doc.getStatus()
+                        doc.getStatus(),
+                        doc.getComment()
                 ))
                 .toList();
     }

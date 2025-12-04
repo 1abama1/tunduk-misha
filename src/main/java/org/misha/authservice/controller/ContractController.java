@@ -6,6 +6,7 @@ import org.misha.authservice.dto.ContractRequest;
 import org.misha.authservice.dto.CreateContractRequest;
 import org.misha.authservice.dto.RentalDocumentDto;
 import org.misha.authservice.dto.TerminateContractRequest;
+import org.misha.authservice.dto.UpdateContractRequest;
 import org.misha.authservice.entity.ToolTemplate;
 import org.misha.authservice.exception.BadRequestException;
 import org.misha.authservice.repository.ToolRepository;
@@ -14,13 +15,7 @@ import org.misha.authservice.service.ContractService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +45,18 @@ public class ContractController {
         return ResponseEntity.ok(contractService.createContract(req));
     }
 
+    @GetMapping
+    public ResponseEntity<List<RentalDocumentDto>> getAll() {
+        return ResponseEntity.ok(contractService.getAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<RentalDocumentDto> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(contractService.getById(id));
+    }
+
     @PostMapping("/{id}/close")
+
     public ResponseEntity<?> close(@PathVariable Long id) {
         contractService.closeContract(id);
         return ResponseEntity.ok(Map.of(
@@ -69,6 +75,14 @@ public class ContractController {
                 "status", "terminated",
                 "contractId", id
         ));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RentalDocumentDto> updateContract(
+            @PathVariable Long id,
+            @RequestBody UpdateContractRequest req
+    ) {
+        return ResponseEntity.ok(contractService.update(id, req));
     }
 
     @PostMapping("/excel")

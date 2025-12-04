@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,4 +28,13 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
 
     @Query("SELECT DISTINCT d FROM RentalDocument d LEFT JOIN FETCH d.tools t LEFT JOIN FETCH t.template tmpl LEFT JOIN FETCH tmpl.category WHERE d.id IN :ids")
     List<RentalDocument> findByIdsWithTools(@Param("ids") List<Long> ids);
+
+    @Query("""
+            SELECT COUNT(d)
+            FROM RentalDocument d
+            WHERE d.createdAt >= :start
+              AND d.createdAt < :end
+            """)
+    long countCreatedBetween(@Param("start") LocalDateTime start,
+                             @Param("end") LocalDateTime end);
 }

@@ -16,6 +16,7 @@ public record RentalDocumentDto(
         LocalDateTime closedAt,
         LocalDateTime terminatedAt,
         String terminationReason,
-        ContractStatus status
+        ContractStatus status,
+        String comment
 ) {}
 

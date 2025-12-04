@@ -81,7 +81,8 @@ public class ClientMapper {
                 passport.getNumber(),
                 passport.getIssuedBy(),
                 passport.getSubdivisionCode(),
-                passport.getIssueDate()
+                passport.getIssueDate(),
+                passport.getInn()
         );
     }
 

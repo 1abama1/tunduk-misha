@@ -159,8 +159,8 @@ public class ClientService {
         return clientRepository.searchLight(normalized);
     }
 
-    private void applyPassport(Client client, PassportDto passportDto) {
-        if (passportDto == null) {
+    private void applyPassport(Client client, PassportDto dto) {
+        if (dto == null) {
             return;
         }
         ClientPassport passport = client.getPassport();
@@ -168,11 +168,12 @@ public class ClientService {
             passport = new ClientPassport();
             passport.setClient(client);
         }
-        passport.setSeries(passportDto.series());
-        passport.setNumber(passportDto.number());
-        passport.setIssuedBy(passportDto.issuedBy());
-        passport.setSubdivisionCode(passportDto.subdivisionCode());
-        passport.setIssueDate(passportDto.issueDate());
+        passport.setSeries(dto.series());
+        passport.setNumber(dto.number());
+        passport.setIssuedBy(dto.issuedBy());
+        passport.setSubdivisionCode(dto.subdivisionCode());
+        passport.setIssueDate(dto.issueDate());
+        passport.setInn(dto.inn());
         client.setPassport(passport);
     }
 }
