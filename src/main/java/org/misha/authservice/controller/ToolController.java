@@ -83,6 +83,12 @@ public class ToolController {
         return ResponseEntity.ok(toolService.getAvailableTools(categoryId, rentalPointId));
     }
 
+    // Получить все экземпляры инструмента по модели
+    @GetMapping("/template/{templateId}")
+    public ResponseEntity<List<ToolDto>> getToolsByTemplate(@PathVariable Long templateId) {
+        return ResponseEntity.ok(toolService.getByTemplate(templateId));
+    }
+
     // Загрузить изображения инструмента
     @PostMapping("/{toolId}/images")
     public ResponseEntity<List<ToolImageDto>> uploadToolImages(

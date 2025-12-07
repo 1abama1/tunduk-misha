@@ -106,9 +106,6 @@ public class ToolDataInitializer {
                         ToolTemplate.builder()
                                 .name(name)
                                 .category(category)
-                                .available(true)
-                                .totalCount(3)
-                                .availableCount(3)
                                 .description(name)
                                 .build()
                 )
@@ -123,15 +120,16 @@ public class ToolDataInitializer {
         List<ToolTemplate> templates = templateRepository.findAll();
 
         templates.forEach(template -> {
-            for (int i = 1; i <= template.getTotalCount(); i++) {
+            // Создаем по 3 экземпляра для каждой модели
+            for (int i = 1; i <= 3; i++) {
                 String serial = generateSerial(template.getName(), i);
 
                 Tool tool = Tool.builder()
                         .template(template)
-                        .name(template.getName()) // ✅ ВАЖНО
+                        .name(template.getName()) // для обратной совместимости
                         .serialNumber(serial)
-                        .inventoryNumber(serial) // ✅ для согласованности
-                        .status(ToolStatus.AVAILABLE) // ✅
+                        .inventoryNumber(serial) // уникальный инвентарный номер
+                        .status(ToolStatus.AVAILABLE)
                         .deposit(1000.0) // базовый залог
                         .createdAt(LocalDateTime.now())
                         .contract(null)

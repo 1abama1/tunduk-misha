@@ -7,6 +7,7 @@ import org.misha.authservice.entity.Tag;
 import org.misha.authservice.entity.User;
 import org.misha.authservice.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -18,6 +19,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public List<UserSearchResultDto> advancedSearch(
             String query,
             String tagsParam,
@@ -30,62 +32,36 @@ public class AdminUserService {
             String sort,
             String direction
     ) {
+        // Парсинг тегов
+        final List<Tag> finalTagsList = parseTags(tagsParam);
 
-        List<User> users = userRepository.findByRole(Role.ADMIN);
+        // SQL-фильтрация на уровне базы данных
+        List<User> users = userRepository.searchAdvanced(
+                Role.ADMIN,
+                query != null && !query.isBlank() ? query : null,
+                simpleMode,
+                consentPersonalData
+        );
 
-        // 🔍 full-text search
-        if (query != null && !query.isBlank()) {
-            String q = query.toLowerCase();
+        // Фильтрация по тегам (выполняется в памяти, т.к. JPQL не поддерживает сложные проверки коллекций)
+        if (finalTagsList != null && !finalTagsList.isEmpty()) {
             users = users.stream()
-                    .filter(u ->
-                            contains(u.getFullName(), q) ||
-                                    contains(u.getEmail(), q) ||
-                                    contains(u.getPhone(), q)
-                    ).toList();
-        }
-
-        // 🏷 Tag filtering
-        if (tagsParam != null && !tagsParam.isBlank()) {
-            List<Tag> required = Arrays.stream(tagsParam.split(","))
-                    .map(String::trim)
-                    .map(Tag::valueOf)
-                    .toList();
-
-            users = users.stream()
-                    .filter(u -> u.getTags().containsAll(required))
+                    .filter(u -> u.getTags() != null && u.getTags().containsAll(finalTagsList))
                     .toList();
         }
 
-        // 📄 Has documents? - У админов нет документов, фильтр игнорируется
-        // 📄 Min/Max docs - У админов нет документов, фильтры игнорируются
-
-        // 👤 Filter by simple mode
-        if (simpleMode != null) {
-            users = users.stream()
-                    .filter(u -> u.isSimpleMode() == simpleMode)
-                    .toList();
-        }
-
-        // 🔐 Filter by consent
-        if (consentPersonalData != null) {
-            users = users.stream()
-                    .filter(u -> u.isConsentPersonalData() == consentPersonalData)
-                    .toList();
-        }
-
-        // 🔎 Search by contract number - У админов нет документов, фильтр игнорируется
-
-        // 📚 Sorting
-        Comparator<User> comparator = switch (sort) {
+        // Сортировка (можно также вынести в SQL)
+        Comparator<User> baseComparator = switch (sort) {
             case "name" -> Comparator.comparing(User::getFullName, Comparator.nullsLast(String::compareTo));
             case "email" -> Comparator.comparing(User::getEmail, Comparator.nullsLast(String::compareTo));
             default -> Comparator.comparing(User::getId);
         };
 
-        if (direction.equals("desc"))
-            comparator = comparator.reversed();
+        final Comparator<User> finalComparator = (direction != null && direction.equals("desc"))
+                ? baseComparator.reversed()
+                : baseComparator;
 
-        users = users.stream().sorted(comparator).toList();
+        users = users.stream().sorted(finalComparator).toList();
 
         // DTO
         return users.stream()
@@ -110,5 +86,20 @@ public class AdminUserService {
 
     private String defaultString(String value) {
         return value == null ? "" : value;
+    }
+
+    private List<Tag> parseTags(String tagsParam) {
+        if (tagsParam == null || tagsParam.isBlank()) {
+            return null;
+        }
+        try {
+            return Arrays.stream(tagsParam.split(","))
+                    .map(String::trim)
+                    .map(Tag::valueOf)
+                    .toList();
+        } catch (IllegalArgumentException e) {
+            // Игнорируем неверные теги
+            return List.of();
+        }
     }
 }

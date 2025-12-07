@@ -3,6 +3,9 @@ package org.misha.authservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "tool_templates")
 @Data
@@ -17,18 +20,14 @@ public class ToolTemplate {
     @Column(nullable = false)
     private String name;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private ToolCategory category;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    private Boolean available = true;
-
-    @Column(nullable = false)
-    private Integer totalCount = 0;
-
-    @Column(nullable = false)
-    private Integer availableCount = 0;
+    @OneToMany(mappedBy = "template")
+    @Builder.Default
+    private List<Tool> tools = new ArrayList<>();
 }

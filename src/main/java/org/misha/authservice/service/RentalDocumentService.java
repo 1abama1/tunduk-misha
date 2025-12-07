@@ -28,6 +28,7 @@ public class RentalDocumentService {
     private final ToolRepository toolRepository;
     private final ToolCategoryRepository categoryRepository;
     private final ToolAvailabilityService availabilityService;
+    private final ToolRentalGuard toolRentalGuard;
 
     // -------- CREATE --------
     @Transactional
@@ -77,9 +78,7 @@ public class RentalDocumentService {
             }
 
             // Проверяем что инструмент не в аренде
-            if (tool.getContract() != null) {
-                throw new AppException("TOOL_ALREADY_RENTED", "Tool already rented", HttpStatus.CONFLICT);
-            }
+            toolRentalGuard.ensureAvailableForRental(tool);
 
             // Привязываем инструмент к документу
             tool.setContract(doc);

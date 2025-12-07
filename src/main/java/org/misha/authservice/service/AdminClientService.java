@@ -27,6 +27,7 @@ public class AdminClientService {
     private final ClientImageRepository imageRepository;
     private final ClientMapper clientMapper;
 
+    @Transactional(readOnly = true)
     public List<ClientSearchResultDto> advancedSearch(
             String query,
             String tags,
@@ -39,67 +40,33 @@ public class AdminClientService {
             String sort,
             String direction
     ) {
-
-        List<Client> list = clientRepository.findAll();
-
-        // текстовый поиск
-        if (StringUtils.hasText(query)) {
-            String q = query.toLowerCase();
-            list = list.stream().filter(c ->
-                    (c.getFullName() != null && c.getFullName().toLowerCase().contains(q)) ||
-                    (c.getPhone() != null && c.getPhone().toLowerCase().contains(q)) ||
-                    (c.getAddress() != null && c.getAddress().toLowerCase().contains(q)) ||
-                    (c.getEmail() != null && c.getEmail().toLowerCase().contains(q))
-            ).collect(Collectors.toList());
-        }
-
-        // поиск по тегу
+        // SQL-фильтрация на уровне базы данных
+        Tag tag = null;
         if (StringUtils.hasText(tags)) {
-            Tag requiredTag = Tag.valueOf(tags.trim());
-            list = list.stream()
-                    .filter(c -> c.getTag() != null && c.getTag().equals(requiredTag))
-                    .collect(Collectors.toList());
-        }
-
-        // поиск по документам
-        if (hasDocuments != null) {
-            if (hasDocuments) {
-                list = list.stream()
-                        .filter(c -> c.getDocuments() != null && !c.getDocuments().isEmpty())
-                        .collect(Collectors.toList());
-            } else {
-                list = list.stream()
-                        .filter(c -> c.getDocuments() == null || c.getDocuments().isEmpty())
-                        .collect(Collectors.toList());
+            try {
+                tag = Tag.valueOf(tags.trim());
+            } catch (IllegalArgumentException e) {
+                // Игнорируем неверный тег
             }
         }
 
-        // поиск по номеру контракта
-        if (StringUtils.hasText(contractNumber)) {
-            list = list.stream()
-                    .filter(c -> c.getDocuments() != null && c.getDocuments().stream()
-                            .anyMatch(d -> d.getContractNumber() != null && 
-                                    d.getContractNumber().contains(contractNumber)))
-                    .toList();
-        }
+        List<Client> list = clientRepository.searchAdvanced(
+                StringUtils.hasText(query) ? query : null,
+                tag,
+                hasDocuments,
+                StringUtils.hasText(contractNumber) ? contractNumber : null,
+                minDocs,
+                maxDocs
+        );
 
-        // фильтр по количеству документов
-        if (minDocs != null) {
-            list = list.stream()
-                    .filter(c -> c.getDocuments() != null && c.getDocuments().size() >= minDocs)
-                    .collect(Collectors.toList());
-        }
-        if (maxDocs != null) {
-            list = list.stream()
-                    .filter(c -> c.getDocuments() != null && c.getDocuments().size() <= maxDocs)
-                    .collect(Collectors.toList());
-        }
-
-        // сортировка
+        // Сортировка (можно также вынести в SQL, но для простоты оставляем в памяти)
         Comparator<Client> cmp = switch (sort) {
             case "name" -> Comparator.comparing(Client::getFullName, Comparator.nullsLast(String::compareTo));
             case "email" -> Comparator.comparing(Client::getEmail, Comparator.nullsLast(String::compareTo));
-            case "documents" -> Comparator.comparingInt(c -> c.getDocuments() != null ? c.getDocuments().size() : 0);
+            case "documents" -> Comparator.comparingInt(c -> {
+                // Подсчет документов - можно оптимизировать через JOIN COUNT в SQL
+                return c.getDocuments() != null ? c.getDocuments().size() : 0;
+            });
             default -> Comparator.comparing(Client::getId);
         };
 

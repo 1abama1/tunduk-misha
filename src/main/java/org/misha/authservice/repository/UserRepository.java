@@ -19,4 +19,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u where u.role = :role and :tag member of u.tags")
     List<User> findByRoleAndTag(@Param("role") Role role, @Param("tag") Tag tag);
+
+    @Query("""
+            SELECT DISTINCT u
+            FROM User u
+            WHERE u.role = :role
+            AND (:query IS NULL OR :query = ''
+                OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(u.phone) LIKE LOWER(CONCAT('%', :query, '%')))
+            AND (:simpleMode IS NULL OR u.simpleMode = :simpleMode)
+            AND (:consentPersonalData IS NULL OR u.consentPersonalData = :consentPersonalData)
+            """)
+    List<User> searchAdvanced(
+            @Param("role") Role role,
+            @Param("query") String query,
+            @Param("simpleMode") Boolean simpleMode,
+            @Param("consentPersonalData") Boolean consentPersonalData
+    );
 }

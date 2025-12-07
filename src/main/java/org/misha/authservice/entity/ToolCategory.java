@@ -3,6 +3,7 @@ package org.misha.authservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -19,6 +20,9 @@ public class ToolCategory {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-    private List<ToolTemplate> templates;
+    private String description;
+
+    @OneToMany(mappedBy = "category")
+    @Builder.Default
+    private List<ToolTemplate> templates = new ArrayList<>();
 }

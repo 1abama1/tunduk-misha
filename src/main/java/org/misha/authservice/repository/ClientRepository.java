@@ -43,5 +43,33 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
             ORDER BY c.fullName ASC
             """)
     List<ClientLightSearchDto> searchLight(@Param("query") String query);
+
+    @Query("""
+            SELECT DISTINCT c
+            FROM Client c
+            LEFT JOIN c.documents d
+            WHERE (:query IS NULL OR :query = ''
+                OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(c.address) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(c.email) LIKE LOWER(CONCAT('%', :query, '%')))
+            AND (:tag IS NULL OR c.tag = :tag)
+            AND (:hasDocuments IS NULL 
+                OR (:hasDocuments = true AND EXISTS (SELECT 1 FROM RentalDocument rd WHERE rd.client.id = c.id))
+                OR (:hasDocuments = false AND NOT EXISTS (SELECT 1 FROM RentalDocument rd WHERE rd.client.id = c.id)))
+            AND (:contractNumber IS NULL OR :contractNumber = ''
+                OR EXISTS (SELECT 1 FROM RentalDocument rd WHERE rd.client.id = c.id 
+                    AND LOWER(rd.contractNumber) LIKE LOWER(CONCAT('%', :contractNumber, '%'))))
+            AND (:minDocs IS NULL OR (SELECT COUNT(rd) FROM RentalDocument rd WHERE rd.client.id = c.id) >= :minDocs)
+            AND (:maxDocs IS NULL OR (SELECT COUNT(rd) FROM RentalDocument rd WHERE rd.client.id = c.id) <= :maxDocs)
+            """)
+    List<Client> searchAdvanced(
+            @Param("query") String query,
+            @Param("tag") org.misha.authservice.entity.Tag tag,
+            @Param("hasDocuments") Boolean hasDocuments,
+            @Param("contractNumber") String contractNumber,
+            @Param("minDocs") Integer minDocs,
+            @Param("maxDocs") Integer maxDocs
+    );
 }
 

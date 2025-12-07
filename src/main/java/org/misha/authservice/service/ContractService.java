@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,8 @@ public class ContractService {
     private final RentalDocumentRepository documentRepository;
     private final ContractExcelService contractExcelService;
     private final ContractValidator contractValidator;
+    private final ToolRentalGuard toolRentalGuard;
+    private final AuditLogService auditLogService;
 
     private String generateDailyContractNumber() {
         LocalDate today = LocalDate.now();
@@ -62,9 +65,7 @@ public class ContractService {
         Tool tool = toolRepository.findById(req.toolId())
                 .orElseThrow(() -> new NotFoundException("Инструмент не найден"));
 
-        if (tool.getContract() != null) {
-            throw new BadRequestException("Инструмент занят");
-        }
+        toolRentalGuard.ensureAvailableForRental(tool);
 
         LocalDateTime startDateTime = req.startDateTime() != null ? req.startDateTime() : LocalDateTime.now();
         String contractNumber = generateDailyContractNumber();
@@ -81,6 +82,13 @@ public class ContractService {
 
         tool.setContract(doc);
         toolRepository.save(tool);
+
+        // Audit logging
+        auditLogService.logCreate("Contract", doc.getId(), Map.of(
+                "contractNumber", doc.getContractNumber(),
+                "clientId", client.getId(),
+                "toolId", tool.getId()
+        ));
 
         return toDto(doc);
     }
@@ -123,6 +131,12 @@ public class ContractService {
 
         doc.setClosedAt(LocalDateTime.now());
         documentRepository.save(doc);
+
+        // Audit logging
+        auditLogService.logContractClose(contractId, Map.of(
+                "contractNumber", doc.getContractNumber(),
+                "toolsCount", tools.size()
+        ));
     }
 
     @Transactional
@@ -154,6 +168,15 @@ public class ContractService {
             doc.setComment(req.comment());
         }
 
+        documentRepository.save(doc);
+
+        // Audit logging
+        Map<String, Object> changes = new java.util.HashMap<>();
+        if (req.expectedReturnDate() != null) changes.put("expectedReturnDate", req.expectedReturnDate());
+        if (req.amount() != null) changes.put("amount", req.amount());
+        if (req.comment() != null) changes.put("comment", "updated");
+        auditLogService.logUpdate("Contract", id, changes);
+
         return toDto(doc);
     }
 
@@ -182,13 +205,18 @@ public class ContractService {
         }
 
         doc.setTerminatedAt(LocalDateTime.now());
-        doc.setTerminationReason(
-                reason != null && !reason.isBlank()
-                        ? reason
-                        : "Расторгнут без указания причины"
-        );
+        String terminationReason = reason != null && !reason.isBlank()
+                ? reason
+                : "Расторгнут без указания причины";
+        doc.setTerminationReason(terminationReason);
 
         documentRepository.save(doc);
+
+        // Audit logging
+        auditLogService.logContractTerminate(contractId, terminationReason, Map.of(
+                "contractNumber", doc.getContractNumber(),
+                "toolsCount", tools.size()
+        ));
     }
 
     @Transactional

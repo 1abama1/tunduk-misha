@@ -1,18 +1,22 @@
 package org.misha.authservice.mapper;
 
+import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.ToolListDto;
 import org.misha.authservice.entity.Tool;
 import org.misha.authservice.entity.ToolStatus;
+import org.misha.authservice.service.ToolRentalGuard;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 @Component
+@RequiredArgsConstructor
 public class ToolMapper {
 
+    private final ToolRentalGuard toolRentalGuard;
+
     public ToolListDto toListDto(Tool tool) {
-        ToolStatus status = resolveStatus(tool);
+        ToolStatus status = toolRentalGuard.resolveStatus(tool);
 
         return new ToolListDto(
                 tool.getId(),
@@ -23,23 +27,6 @@ public class ToolMapper {
                         ? tool.getTemplate().getCategory().getName() : null,
                 tool.getDeposit() != null ? BigDecimal.valueOf(tool.getDeposit()) : null
         );
-    }
-
-    private ToolStatus resolveStatus(Tool tool) {
-        if (tool.getContract() == null) {
-            return ToolStatus.AVAILABLE;
-        }
-
-        if (tool.getContract().getTerminatedAt() != null) {
-            return ToolStatus.AVAILABLE;
-        }
-
-        if (tool.getContract().getExpectedReturnDate() != null &&
-            tool.getContract().getExpectedReturnDate().isBefore(LocalDate.now())) {
-            return ToolStatus.OVERDUE;
-        }
-
-        return ToolStatus.RENTED;
     }
 }
 

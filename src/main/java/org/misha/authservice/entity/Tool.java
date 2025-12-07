@@ -20,15 +20,12 @@ public class Tool {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Название
-    private String name;
-
-    // Артикул
-    private String article;
-
-    // Инвентарный номер
+    // Инвентарный номер (уникальный)
     @Column(unique = true)
     private String inventoryNumber;
+
+    // Серийный номер (заводской номер)
+    private String serialNumber;
 
     // Статус
     @Enumerated(EnumType.STRING)
@@ -36,41 +33,30 @@ public class Tool {
     @Builder.Default
     private ToolStatus status = ToolStatus.AVAILABLE;
 
-    // Пункт проката
+    // Модель инструмента (обязательная ссылка)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "rental_point_id")
-    private RentalPoint rentalPoint;
+    @JoinColumn(name = "template_id", nullable = false)
+    private ToolTemplate template;
 
-    // Категория
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private ToolCategory category;
-
-    // Описание
-    @Column(columnDefinition = "TEXT")
-    private String description;
-
-    // Закупочная цена
-    private Double purchasePrice;
-
-    // Дата закупки
-    private LocalDate purchaseDate;
-
-    // Денежный залог
-    private Double deposit;
-
-    // Активный договор (если есть)
+    // Активный договор (null = свободен)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contract_id")
     private RentalDocument contract;
 
-    // Шаблон (для обратной совместимости)
+    // Дополнительные поля для бизнес-логики (обратная совместимость)
+    private String name;
+    private String article;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "template_id")
-    private ToolTemplate template;
-
-    // Серийный номер (для обратной совместимости)
-    private String serialNumber;
+    @JoinColumn(name = "rental_point_id")
+    private RentalPoint rentalPoint;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private ToolCategory category;
+    @Column(columnDefinition = "TEXT")
+    private String description;
+    private Double purchasePrice;
+    private LocalDate purchaseDate;
+    private Double deposit;
 
     // Параметры инструмента
     @OneToMany(mappedBy = "tool", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -6,9 +6,7 @@ import lombok.Data;
 public class ToolTemplateDto {
     private Long id;
     private String name;
-    private String categoryName;
     private String description;
-    private Boolean available;
-    private Integer totalCount;
-    private Integer availableCount;
+    private Long categoryId;
+    private String categoryName;
 }

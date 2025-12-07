@@ -30,21 +30,24 @@ public class ToolTemplateService {
     }
 
     @Transactional(readOnly = true)
-    public List<ToolTemplateDto> getAvailableTemplates() {
-        return templateRepository.findByAvailableTrue().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    public ToolTemplateDto getTemplateById(Long id) {
+        ToolTemplate template = templateRepository.findById(id)
+                .orElseThrow(() -> new org.misha.authservice.exception.AppException(
+                        "TEMPLATE_NOT_FOUND",
+                        "Template not found",
+                        org.springframework.http.HttpStatus.NOT_FOUND));
+        return toDto(template);
     }
 
     private ToolTemplateDto toDto(ToolTemplate template) {
         ToolTemplateDto dto = new ToolTemplateDto();
         dto.setId(template.getId());
         dto.setName(template.getName());
-        dto.setCategoryName(template.getCategory().getName());
         dto.setDescription(template.getDescription());
-        dto.setAvailable(template.getAvailable());
-        dto.setTotalCount(template.getTotalCount());
-        dto.setAvailableCount(template.getAvailableCount());
+        if (template.getCategory() != null) {
+            dto.setCategoryId(template.getCategory().getId());
+            dto.setCategoryName(template.getCategory().getName());
+        }
         return dto;
     }
 }

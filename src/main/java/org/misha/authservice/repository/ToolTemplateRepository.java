@@ -7,5 +7,4 @@ import java.util.List;
 
 public interface ToolTemplateRepository extends JpaRepository<ToolTemplate, Long> {
     List<ToolTemplate> findByCategoryId(Long categoryId);
-    List<ToolTemplate> findByAvailableTrue();
 }

@@ -24,8 +24,8 @@ public class ToolTemplateController {
         return ResponseEntity.ok(templateService.getTemplatesByCategory(categoryId));
     }
 
-    @GetMapping("/available")
-    public ResponseEntity<List<ToolTemplateDto>> getAvailableTemplates() {
-        return ResponseEntity.ok(templateService.getAvailableTemplates());
+    @GetMapping("/{id}")
+    public ResponseEntity<ToolTemplateDto> getTemplateById(@PathVariable Long id) {
+        return ResponseEntity.ok(templateService.getTemplateById(id));
     }
 }

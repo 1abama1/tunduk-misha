@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +36,8 @@ public class ToolService {
     private final ToolAttributeRepository attributeRepository;
     private final ToolImageRepository imageRepository;
     private final ToolMapper toolMapper;
+    private final ToolRentalGuard toolRentalGuard;
+    private final AuditLogService auditLogService;
 
     @Transactional(readOnly = true)
     public List<ToolListDto> getAll() {
@@ -79,30 +82,50 @@ public class ToolService {
 
     @Transactional
     public ToolDto createTool(CreateToolRequest request) {
-        // Проверка уникальности инвентарного номера (если указан)
+        // Template обязателен
+        ToolTemplate template = templateRepository.findById(request.getTemplateId())
+                .orElseThrow(() -> new AppException(
+                        "TEMPLATE_NOT_FOUND",
+                        "Template not found",
+                        HttpStatus.NOT_FOUND));
+
+        // Проверка уникальности инвентарного номера
         if (request.getInventoryNumber() != null && !request.getInventoryNumber().trim().isEmpty()) {
             if (toolRepository.existsByInventoryNumber(request.getInventoryNumber())) {
-                throw new AppException("INVENTORY_NUMBER_EXISTS", "Inventory number already exists", HttpStatus.BAD_REQUEST);
+                throw new AppException(
+                        "INVENTORY_EXISTS",
+                        "Inventory number must be unique",
+                        HttpStatus.CONFLICT);
             }
         }
 
         Tool.ToolBuilder builder = Tool.builder()
-                .name(request.getName())
-                .article(request.getArticle())
                 .inventoryNumber(request.getInventoryNumber())
-                .description(request.getDescription())
-                .purchasePrice(request.getPurchasePrice())
-                .purchaseDate(request.getPurchaseDate())
-                .deposit(request.getDeposit());
+                .serialNumber(request.getSerialNumber())
+                .status(ToolStatus.AVAILABLE)  // По умолчанию AVAILABLE
+                .template(template);
 
-        // Установка статуса (по умолчанию AVAILABLE)
-        if (request.getStatus() != null && request.getStatus() != ToolStatus.RENTED) {
-            builder.status(request.getStatus());
-        } else {
-            builder.status(ToolStatus.AVAILABLE);
+        // Дополнительные поля для обратной совместимости
+        if (request.getName() != null) {
+            builder.name(request.getName());
+        }
+        if (request.getArticle() != null) {
+            builder.article(request.getArticle());
+        }
+        if (request.getDescription() != null) {
+            builder.description(request.getDescription());
+        }
+        if (request.getPurchasePrice() != null) {
+            builder.purchasePrice(request.getPurchasePrice());
+        }
+        if (request.getPurchaseDate() != null) {
+            builder.purchaseDate(request.getPurchaseDate());
+        }
+        if (request.getDeposit() != null) {
+            builder.deposit(request.getDeposit());
         }
 
-        // Установка категории
+        // Установка категории (для обратной совместимости)
         if (request.getCategoryId() != null) {
             ToolCategory category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new AppException("CATEGORY_NOT_FOUND", "Category not found", HttpStatus.NOT_FOUND));
@@ -116,22 +139,15 @@ public class ToolService {
             builder.rentalPoint(rentalPoint);
         }
 
-        // Обратная совместимость с template
-        if (request.getTemplateId() != null) {
-            ToolTemplate template = templateRepository.findById(request.getTemplateId())
-                    .orElseThrow(() -> new AppException("TEMPLATE_NOT_FOUND", "Template not found", HttpStatus.NOT_FOUND));
-            builder.template(template);
-            if (request.getSerialNumber() != null) {
-                builder.serialNumber(request.getSerialNumber());
-            }
-        }
-
-        // Установка договора (если есть)
+        // Установка договора (если есть) - автоматически устанавливает статус RENTED
         if (request.getContractId() != null) {
             RentalDocument contract = rentalDocumentRepository.findById(request.getContractId())
                     .orElseThrow(() -> new AppException("DOCUMENT_NOT_FOUND", "Contract not found", HttpStatus.NOT_FOUND));
             builder.contract(contract);
             builder.status(ToolStatus.RENTED); // Автоматически RENTED при наличии договора
+        } else if (request.getStatus() != null && request.getStatus() != ToolStatus.RENTED) {
+            // Можно установить статус вручную, кроме RENTED (он устанавливается только через договор)
+            builder.status(request.getStatus());
         }
 
         Tool tool = builder.build();
@@ -149,6 +165,13 @@ public class ToolService {
         }
 
         Tool savedTool = toolRepository.save(tool);
+
+        // Audit logging
+        auditLogService.logCreate("Tool", savedTool.getId(), Map.of(
+                "name", savedTool.getName() != null ? savedTool.getName() : "N/A",
+                "inventoryNumber", savedTool.getInventoryNumber() != null ? savedTool.getInventoryNumber() : "N/A"
+        ));
+
         return toDto(savedTool);
     }
 
@@ -161,15 +184,7 @@ public class ToolService {
                         HttpStatus.NOT_FOUND
                 ));
 
-        ToolStatus status = resolveStatus(tool);
-
-        if (status == ToolStatus.RENTED || status == ToolStatus.OVERDUE) {
-            throw new AppException(
-                    "TOOL_IN_USE",
-                    "Нельзя редактировать инструмент в аренде",
-                    HttpStatus.BAD_REQUEST
-            );
-        }
+        toolRentalGuard.ensureCanEdit(tool);
 
         // обновляем TEMPLATE
         if (req.name() != null) {
@@ -216,6 +231,14 @@ public class ToolService {
         }
 
         toolRepository.save(tool);
+
+        // Audit logging
+        Map<String, Object> changes = new java.util.HashMap<>();
+        if (req.name() != null) changes.put("name", req.name());
+        if (req.description() != null) changes.put("description", "updated");
+        if (req.categoryId() != null) changes.put("categoryId", req.categoryId());
+        auditLogService.logUpdate("Tool", id, changes);
+
         return toolMapper.toListDto(tool);
     }
 
@@ -230,9 +253,7 @@ public class ToolService {
         }
 
         // Если есть активный договор, нельзя изменить статус
-        if (tool.getContract() != null) {
-            throw new AppException("TOOL_IS_RENTED", "Cannot change status of rented tool", HttpStatus.BAD_REQUEST);
-        }
+        toolRentalGuard.ensureCanChangeStatus(tool);
 
         tool.setStatus(request.status());
         toolRepository.save(tool);
@@ -244,9 +265,13 @@ public class ToolService {
                 .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "Tool not found", HttpStatus.NOT_FOUND));
 
         // Нельзя удалить инструмент, который в аренде
-        if (tool.getContract() != null) {
-            throw new AppException("CANNOT_DELETE_RENTED_TOOL", "Cannot delete tool that is currently rented", HttpStatus.BAD_REQUEST);
-        }
+        toolRentalGuard.ensureCanDelete(tool);
+
+        // Audit logging
+        auditLogService.logDelete("Tool", id, Map.of(
+                "name", tool.getName() != null ? tool.getName() : "N/A",
+                "inventoryNumber", tool.getInventoryNumber() != null ? tool.getInventoryNumber() : "N/A"
+        ));
 
         toolRepository.delete(tool);
     }
@@ -273,7 +298,11 @@ public class ToolService {
                         .data(file.getBytes())
                         .tool(tool)
                         .build();
-                images.add(imageRepository.save(image));
+                ToolImage savedImage = imageRepository.save(image);
+                images.add(savedImage);
+
+                // Audit logging
+                auditLogService.logImageUpload("Tool", toolId, file.getOriginalFilename());
             } catch (IOException e) {
                 throw new AppException("FILE_UPLOAD_ERROR", "Failed to upload file: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
@@ -347,20 +376,15 @@ public class ToolService {
         return builder.build();
     }
 
+    @Transactional(readOnly = true)
+    public List<ToolDto> getByTemplate(Long templateId) {
+        return toolRepository.findByTemplateId(templateId)
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     private ToolStatus resolveStatus(Tool tool) {
-        if (tool.getContract() == null) {
-            return ToolStatus.AVAILABLE;
-        }
-
-        if (tool.getContract().getTerminatedAt() != null) {
-            return ToolStatus.AVAILABLE;
-        }
-
-        if (tool.getContract().getExpectedReturnDate() != null &&
-            tool.getContract().getExpectedReturnDate().isBefore(LocalDate.now())) {
-            return ToolStatus.OVERDUE;
-        }
-
-        return ToolStatus.RENTED;
+        return toolRentalGuard.resolveStatus(tool);
     }
 }
