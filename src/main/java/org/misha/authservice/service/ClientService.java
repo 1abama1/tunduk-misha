@@ -42,6 +42,7 @@ public class ClientService {
         Client client = Client.builder()
                 .fullName(req.fullName())
                 .phone(req.phone())
+                .whatsappPhone(req.whatsappPhone())
                 .address(req.address())
                 .email(req.email())
                 .birthDate(req.birthDate())
@@ -122,6 +123,7 @@ public class ClientService {
 
         if (req.fullName() != null) client.setFullName(req.fullName());
         if (req.phone() != null) client.setPhone(req.phone());
+        if (req.whatsappPhone() != null) client.setWhatsappPhone(req.whatsappPhone());
         if (req.address() != null) client.setAddress(req.address());
         if (req.email() != null) client.setEmail(req.email());
         if (req.birthDate() != null) client.setBirthDate(req.birthDate());

@@ -20,8 +20,6 @@ public class ToolCategory {
     @Column(nullable = false, unique = true)
     private String name;
 
-    private String description;
-
     @OneToMany(mappedBy = "category")
     @Builder.Default
     private List<ToolTemplate> templates = new ArrayList<>();

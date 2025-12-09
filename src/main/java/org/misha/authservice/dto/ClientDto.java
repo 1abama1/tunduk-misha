@@ -16,6 +16,7 @@ public class ClientDto {
     private Long id;
     private String fullName;
     private String phone;
+    private String whatsappPhone;
     private String address;
     private String email;
     private LocalDate birthDate;

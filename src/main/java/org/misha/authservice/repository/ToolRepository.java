@@ -32,15 +32,24 @@ public interface ToolRepository extends JpaRepository<Tool, Long> {
     // Новые методы для расширенной функциональности
     List<Tool> findByStatus(ToolStatus status);
     
-    List<Tool> findByCategoryId(Long categoryId);
+    @Query("SELECT t FROM Tool t WHERE t.template.category.id = :categoryId")
+    List<Tool> findByCategoryId(@Param("categoryId") Long categoryId);
     
     List<Tool> findByRentalPointId(Long rentalPointId);
     
     @Query("SELECT t FROM Tool t WHERE t.contract IS NULL AND t.status = :status")
-    List<Tool> findAvailableByStatus(ToolStatus status);
+    List<Tool> findAvailableByStatus(@Param("status") ToolStatus status);
     
-    @Query("SELECT t FROM Tool t WHERE t.contract IS NULL AND (:categoryId IS NULL OR t.category.id = :categoryId) AND (:rentalPointId IS NULL OR t.rentalPoint.id = :rentalPointId)")
-    List<Tool> findAvailableTools(Long categoryId, Long rentalPointId);
+    @Query("""
+           SELECT t FROM Tool t
+           WHERE t.contract IS NULL
+             AND (:categoryId IS NULL OR t.template.category.id = :categoryId)
+             AND (:rentalPointId IS NULL OR t.rentalPoint.id = :rentalPointId)
+           """)
+    List<Tool> findAvailableTools(
+            @Param("categoryId") Long categoryId,
+            @Param("rentalPointId") Long rentalPointId
+    );
     
     boolean existsByInventoryNumber(String inventoryNumber);
 
@@ -74,4 +83,11 @@ public interface ToolRepository extends JpaRepository<Tool, Long> {
         WHERE t.id = :id
     """)
     Optional<Tool> findByIdWithTemplateAndContract(@Param("id") Long id);
+
+    @Query("""
+        SELECT t FROM Tool t
+        JOIN FETCH t.template
+        WHERE t.contract.id = :contractId
+    """)
+    List<Tool> findByContractIdWithTemplate(@Param("contractId") Long contractId);
 }

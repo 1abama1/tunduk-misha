@@ -1,13 +1,29 @@
 package org.misha.authservice.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.*;
-import lombok.*;
-
-import java.time.LocalDate;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import org.misha.authservice.entity.Branch;
 
 @Entity
 @Table(name = "tools")
@@ -23,6 +39,9 @@ public class Tool {
     // Инвентарный номер (уникальный)
     @Column(unique = true)
     private String inventoryNumber;
+
+    // Номер экземпляра
+    private Integer instanceNumber;
 
     // Серийный номер (заводской номер)
     private String serialNumber;
@@ -43,20 +62,19 @@ public class Tool {
     @JoinColumn(name = "contract_id")
     private RentalDocument contract;
 
-    // Дополнительные поля для бизнес-логики (обратная совместимость)
-    private String name;
-    private String article;
+    // Бизнес-поля экземпляра
+    private String name;            // Название
+    private String article;          // Артикул
+    private Double deposit;         // Залог
+    private Double purchasePrice;   // Цена закупки
+    private Double dailyPrice;      // Цена в сутки
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "branch_id")
+    private Branch branch;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rental_point_id")
     private RentalPoint rentalPoint;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private ToolCategory category;
-    @Column(columnDefinition = "TEXT")
-    private String description;
-    private Double purchasePrice;
-    private LocalDate purchaseDate;
-    private Double deposit;
 
     // Параметры инструмента
     @OneToMany(mappedBy = "tool", cascade = CascadeType.ALL, orphanRemoval = true)

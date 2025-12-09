@@ -10,7 +10,8 @@ public record RentalDocumentDto(
         String contractNumber,
         LocalDateTime startDateTime,
         LocalDate expectedReturnDate,
-        Double amount,
+        Double dailyPrice,      // Цена за день аренды
+        Double amount,          // Общая сумма (totalPrice)
         LocalDateTime createdAt,
         Long clientId,
         LocalDateTime closedAt,

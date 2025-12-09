@@ -1,7 +1,9 @@
 package org.misha.authservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.misha.authservice.dto.ActiveContractRowDto;
 import org.misha.authservice.dto.ContractRequest;
+import org.misha.authservice.dto.ContractTableDto;
 import org.misha.authservice.dto.CreateContractRequest;
 import org.misha.authservice.dto.RentalDocumentDto;
 import org.misha.authservice.dto.TerminateContractRequest;
@@ -9,6 +11,7 @@ import org.misha.authservice.dto.UpdateContractRequest;
 import org.misha.authservice.exception.AppException;
 import org.springframework.http.HttpStatus;
 import org.misha.authservice.entity.Client;
+import org.misha.authservice.entity.ContractStatus;
 import org.misha.authservice.entity.RentalDocument;
 import org.misha.authservice.entity.Tool;
 import org.misha.authservice.exception.BadRequestException;
@@ -24,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -82,6 +86,10 @@ public class ContractService {
 
         tool.setContract(doc);
         toolRepository.save(tool);
+        
+        // Сохраняем toolId в документе
+        doc.setToolId(tool.getId());
+        documentRepository.save(doc);
 
         // Audit logging
         auditLogService.logCreate("Contract", doc.getId(), Map.of(
@@ -99,6 +107,7 @@ public class ContractService {
                 doc.getContractNumber(),
                 doc.getStartDateTime(),
                 doc.getExpectedReturnDate(),
+                doc.getDailyPrice(),
                 doc.getAmount(),
                 doc.getCreatedAt(),
                 doc.getClient() != null ? doc.getClient().getId() : null,
@@ -124,6 +133,12 @@ public class ContractService {
         }
 
         List<Tool> tools = toolRepository.findByContractId(contractId);
+        
+        // Сохраняем toolId перед отвязкой инструментов
+        if (!tools.isEmpty()) {
+            doc.setToolId(tools.get(0).getId());
+        }
+        
         for (Tool tool : tools) {
             tool.setContract(null);
             toolRepository.save(tool);
@@ -199,6 +214,12 @@ public class ContractService {
 
         // освобождаем инструменты
         List<Tool> tools = toolRepository.findByContractId(contractId);
+        
+        // Сохраняем toolId перед отвязкой инструментов
+        if (!tools.isEmpty()) {
+            doc.setToolId(tools.get(0).getId());
+        }
+        
         for (Tool tool : tools) {
             tool.setContract(null);
             toolRepository.save(tool);
@@ -245,6 +266,144 @@ public class ContractService {
                         HttpStatus.NOT_FOUND
                 ));
         return toDto(doc);
+    }
+
+    /**
+     * Получает список активных договоров в формате таблицы.
+     * Возвращает все активные (не закрытые и не расторгнутые) договоры с данными клиента и инструмента.
+     */
+    @Transactional(readOnly = true)
+    public List<ActiveContractRowDto> getActiveContractsTable() {
+        List<RentalDocument> list = documentRepository.findAllActive();
+
+        return list.stream().map(c -> {
+            // Получаем имя клиента
+            String clientName = c.getClient() != null && c.getClient().getFullName() != null
+                    ? c.getClient().getFullName()
+                    : "—";
+
+            // Получаем инструменты с template (JOIN FETCH)
+            List<Tool> tools = toolRepository.findByContractIdWithTemplate(c.getId());
+            
+            // Формируем имя инструмента
+            String toolName;
+            if (tools.isEmpty()) {
+                toolName = "—";
+            } else if (tools.size() == 1) {
+                Tool tool = tools.get(0);
+                // Используем tool.getName() если есть, иначе template.getName()
+                if (tool.getName() != null && !tool.getName().isBlank()) {
+                    toolName = tool.getName();
+                } else if (tool.getTemplate() != null && tool.getTemplate().getName() != null) {
+                    toolName = tool.getTemplate().getName();
+                } else {
+                    toolName = "—";
+                }
+            } else {
+                // Если несколько инструментов, объединяем их имена
+                toolName = tools.stream()
+                        .map(t -> {
+                            if (t.getName() != null && !t.getName().isBlank()) {
+                                return t.getName();
+                            } else if (t.getTemplate() != null && t.getTemplate().getName() != null) {
+                                return t.getTemplate().getName();
+                            } else {
+                                return "—";
+                            }
+                        })
+                        .reduce((a, b) -> a + ", " + b)
+                        .orElse("—");
+            }
+
+            // Форматируем дату начала
+            String startDate = c.getStartDateTime() != null
+                    ? c.getStartDateTime().toString()
+                    : "—";
+
+            // Баланс = amount
+            Double balance = c.getAmount() != null ? c.getAmount() : 0.0;
+
+            return ActiveContractRowDto.builder()
+                    .id(c.getId())
+                    .clientName(clientName)
+                    .toolName(toolName)
+                    .startDate(startDate)
+                    .balance(balance)
+                    .build();
+        }).toList();
+    }
+
+    /**
+     * История договоров (ACTIVE, CLOSED, TERMINATED) с сортировкой по startDateTime DESC.
+     * Фильтры: clientId, toolId, from, to, status (статус фильтруем в сервисе, так как он вычисляемый).
+     */
+    @Transactional(readOnly = true)
+    public List<ContractTableDto> getHistoryTable(Long clientId,
+                                                  Long toolId,
+                                                  LocalDate from,
+                                                  LocalDate to,
+                                                  ContractStatus status) {
+        LocalDateTime fromDate = from != null ? from.atStartOfDay() : null;
+        LocalDateTime toDate = to != null ? to.plusDays(1).atStartOfDay() : null;
+
+        List<RentalDocument> docs;
+        if (fromDate != null && toDate != null) {
+            docs = documentRepository.findHistoryBetween(clientId, toolId, fromDate, toDate);
+        } else if (fromDate != null) {
+            docs = documentRepository.findHistoryFrom(clientId, toolId, fromDate);
+        } else if (toDate != null) {
+            docs = documentRepository.findHistoryTo(clientId, toolId, toDate);
+        } else {
+            docs = documentRepository.findHistoryWithoutDate(clientId, toolId);
+        }
+
+        return docs.stream()
+                .map(doc -> toTableDto(doc, status))
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private ContractTableDto toTableDto(RentalDocument doc, ContractStatus statusFilter) {
+        ContractStatus derivedStatus = doc.getStatus();
+        if (statusFilter != null && derivedStatus != statusFilter) {
+            return null;
+        }
+
+        // Получаем инструмент (берём первый, если их несколько)
+        Tool tool = doc.getTools().isEmpty() ? null : doc.getTools().get(0);
+
+        String toolName;
+        String serialNumber;
+        if (tool == null) {
+            toolName = "—";
+            serialNumber = null;
+        } else {
+            if (tool.getName() != null && !tool.getName().isBlank()) {
+                toolName = tool.getName();
+            } else if (tool.getTemplate() != null && tool.getTemplate().getName() != null) {
+                toolName = tool.getTemplate().getName();
+            } else {
+                toolName = "—";
+            }
+            serialNumber = tool.getSerialNumber();
+        }
+
+        LocalDateTime actualReturn = doc.getClosedAt() != null
+                ? doc.getClosedAt()
+                : doc.getTerminatedAt();
+
+        return ContractTableDto.builder()
+                .id(doc.getId())
+                .contractNumber(doc.getContractNumber())
+                .clientName(doc.getClient() != null ? doc.getClient().getFullName() : "—")
+                .toolName(toolName)
+                .serialNumber(serialNumber)
+                .startDateTime(doc.getStartDateTime())
+                .expectedReturnDate(doc.getExpectedReturnDate())
+                .actualReturnDate(actualReturn)
+                .amount(doc.getAmount())
+                .status(derivedStatus)
+                .build();
     }
 }
 

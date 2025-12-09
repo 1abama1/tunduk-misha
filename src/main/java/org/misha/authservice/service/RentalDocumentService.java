@@ -83,6 +83,10 @@ public class RentalDocumentService {
             // Привязываем инструмент к документу
             tool.setContract(doc);
             toolRepository.save(tool);
+            
+            // Сохраняем toolId в документе
+            doc.setToolId(tool.getId());
+            documentRepository.save(doc);
         }
 
         // Перезагружаем документ с инструментами
@@ -141,6 +145,9 @@ public class RentalDocumentService {
             // привязать новый
             newTool.setContract(doc);
             toolRepository.save(newTool);
+            
+            // Сохраняем toolId в документе
+            doc.setToolId(newTool.getId());
         }
 
         documentRepository.save(doc);
@@ -164,8 +171,12 @@ public class RentalDocumentService {
             );
         }
 
-        // Отвязать все инструменты от документа
+        // Сохраняем toolId перед отвязкой инструментов
         if (doc.getTools() != null && !doc.getTools().isEmpty()) {
+            Tool firstTool = doc.getTools().get(0);
+            doc.setToolId(firstTool.getId());
+            
+            // Отвязать все инструменты от документа
             doc.getTools().forEach(tool -> {
                 tool.setContract(null);
                 toolRepository.save(tool);

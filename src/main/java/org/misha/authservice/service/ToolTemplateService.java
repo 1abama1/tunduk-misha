@@ -1,53 +1,62 @@
 package org.misha.authservice.service;
 
 import lombok.RequiredArgsConstructor;
-import org.misha.authservice.dto.ToolTemplateDto;
+import org.misha.authservice.dto.CreateTemplateRequest;
+import org.misha.authservice.dto.TemplateDto;
+import org.misha.authservice.dto.TemplateFullDto;
+import org.misha.authservice.dto.ToolDtoSimple;
+import org.misha.authservice.entity.Tool;
+import org.misha.authservice.entity.ToolCategory;
 import org.misha.authservice.entity.ToolTemplate;
+import org.misha.authservice.repository.ToolCategoryRepository;
+import org.misha.authservice.repository.ToolRepository;
 import org.misha.authservice.repository.ToolTemplateRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ToolTemplateService {
     private final ToolTemplateRepository templateRepository;
+    private final ToolCategoryRepository categoryRepository;
+    private final ToolRepository toolRepository;
 
-    @Transactional(readOnly = true)
-    public List<ToolTemplateDto> getAllTemplates() {
-        return templateRepository.findAll().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    @Transactional
+    public TemplateDto create(CreateTemplateRequest request) {
+        ToolCategory category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Category not found"));
+
+        ToolTemplate template = templateRepository.save(
+                ToolTemplate.builder()
+                        .name(request.name())
+                        .category(category)
+                        .build()
+        );
+
+        return new TemplateDto(template.getId(), template.getName(), category.getId());
     }
 
     @Transactional(readOnly = true)
-    public List<ToolTemplateDto> getTemplatesByCategory(Long categoryId) {
-        return templateRepository.findByCategoryId(categoryId).stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    public List<TemplateDto> getByCategory(Long categoryId) {
+        return templateRepository.findByCategoryId(categoryId)
+                .stream()
+                .map(t -> new TemplateDto(t.getId(), t.getName(), categoryId))
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public ToolTemplateDto getTemplateById(Long id) {
+    public TemplateFullDto getFull(Long id) {
         ToolTemplate template = templateRepository.findById(id)
-                .orElseThrow(() -> new org.misha.authservice.exception.AppException(
-                        "TEMPLATE_NOT_FOUND",
-                        "Template not found",
-                        org.springframework.http.HttpStatus.NOT_FOUND));
-        return toDto(template);
-    }
+                .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Template not found"));
 
-    private ToolTemplateDto toDto(ToolTemplate template) {
-        ToolTemplateDto dto = new ToolTemplateDto();
-        dto.setId(template.getId());
-        dto.setName(template.getName());
-        dto.setDescription(template.getDescription());
-        if (template.getCategory() != null) {
-            dto.setCategoryId(template.getCategory().getId());
-            dto.setCategoryName(template.getCategory().getName());
-        }
-        return dto;
+        List<Tool> tools = toolRepository.findByTemplateId(template.getId());
+
+        return new TemplateFullDto(
+                template.getId(),
+                template.getName(),
+                tools.stream().map(ToolDtoSimple::fromEntity).toList()
+        );
     }
 }

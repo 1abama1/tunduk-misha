@@ -2,8 +2,13 @@ package org.misha.authservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.*;
+import org.misha.authservice.entity.Tool;
 import org.misha.authservice.entity.ToolImage;
 import org.misha.authservice.entity.ToolStatus;
+import org.misha.authservice.entity.ToolTemplate;
+import org.misha.authservice.repository.ToolRepository;
+import org.misha.authservice.repository.ToolTemplateRepository;
+import org.misha.authservice.service.ToolHistoryService;
 import org.misha.authservice.service.ToolAvailabilityService;
 import org.misha.authservice.service.ToolService;
 import org.springframework.http.HttpHeaders;
@@ -16,14 +21,29 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/admin/tools")
+@RequestMapping({"/api/tools", "/api/admin/tools"})
 @RequiredArgsConstructor
 public class ToolController {
     private final ToolService toolService;
     private final ToolAvailabilityService availabilityService;
+    private final ToolHistoryService toolHistoryService;
+    private final ToolTemplateRepository templateRepository;
+    private final ToolRepository toolRepository;
 
-    // Получить все инструменты (новый DTO-слой с фильтрами)
+    // Получить все инструменты
     @GetMapping
+    public List<ToolDtoSimple> getAll() {
+        return toolService.getAll();
+    }
+
+    // Получить инструмент по ID
+    @GetMapping("/{id}")
+    public ToolDtoSimple getOne(@PathVariable Long id) {
+        return toolService.getOne(id);
+    }
+
+    // Дополнительные методы для обратной совместимости
+    @GetMapping("/filtered")
     public List<ToolListDto> getTools(
             @RequestParam(required = false) ToolStatus status,
             @RequestParam(required = false) Long categoryId
@@ -31,23 +51,15 @@ public class ToolController {
         return toolService.getFiltered(status, categoryId);
     }
 
-    // Получить все инструменты (старый метод для обратной совместимости)
     @GetMapping("/all")
     public ResponseEntity<List<ToolDto>> getAllTools() {
         return ResponseEntity.ok(toolService.getAllTools());
     }
 
-    // Получить инструмент по ID
-    @GetMapping("/{id}")
-    public ResponseEntity<ToolDto> getTool(@PathVariable Long id) {
-        return ResponseEntity.ok(toolService.getToolById(id));
-    }
-
     // Создать инструмент
     @PostMapping
-    public ResponseEntity<ToolDto> createTool(@RequestBody CreateToolRequest request) {
-        ToolDto tool = toolService.createTool(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(tool);
+    public ToolDtoSimple create(@RequestBody CreateToolRequest request) {
+        return toolService.create(request);
     }
 
     // Обновить инструмент
@@ -87,6 +99,13 @@ public class ToolController {
     @GetMapping("/template/{templateId}")
     public ResponseEntity<List<ToolDto>> getToolsByTemplate(@PathVariable Long templateId) {
         return ResponseEntity.ok(toolService.getByTemplate(templateId));
+    }
+
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<org.misha.authservice.dto.tool.ToolHistoryDto>> getHistory(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(toolHistoryService.getHistory(id));
     }
 
     // Загрузить изображения инструмента

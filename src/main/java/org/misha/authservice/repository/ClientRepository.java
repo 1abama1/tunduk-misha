@@ -15,6 +15,10 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
     boolean existsByEmail(String email);
 
+    List<Client> findByFullNameContainingIgnoreCase(String name);
+
+    List<Client> findByPhone(String phone);
+
     Optional<Client> findByEmail(String email);
 
     @Query("SELECT DISTINCT c FROM Client c LEFT JOIN FETCH c.documents LEFT JOIN FETCH c.passport")

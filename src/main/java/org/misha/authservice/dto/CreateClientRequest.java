@@ -7,6 +7,7 @@ import java.time.LocalDate;
 public record CreateClientRequest(
         String fullName,
         String phone,
+        String whatsappPhone,
         String address,
         String email,
         LocalDate birthDate,

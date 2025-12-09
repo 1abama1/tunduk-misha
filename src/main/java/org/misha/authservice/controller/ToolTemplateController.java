@@ -1,31 +1,33 @@
 package org.misha.authservice.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.misha.authservice.dto.ToolTemplateDto;
+import org.misha.authservice.dto.CreateTemplateRequest;
+import org.misha.authservice.dto.TemplateDto;
+import org.misha.authservice.dto.TemplateFullDto;
 import org.misha.authservice.service.ToolTemplateService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/tools/templates")
+@RequestMapping("/api/templates")
 @RequiredArgsConstructor
 public class ToolTemplateController {
-    private final ToolTemplateService templateService;
 
-    @GetMapping
-    public ResponseEntity<List<ToolTemplateDto>> getAllTemplates() {
-        return ResponseEntity.ok(templateService.getAllTemplates());
+    private final ToolTemplateService service;
+
+    @PostMapping
+    public TemplateDto create(@RequestBody CreateTemplateRequest request) {
+        return service.create(request);
     }
 
-    @GetMapping("/category/{categoryId}")
-    public ResponseEntity<List<ToolTemplateDto>> getTemplatesByCategory(@PathVariable Long categoryId) {
-        return ResponseEntity.ok(templateService.getTemplatesByCategory(categoryId));
+    @GetMapping
+    public List<TemplateDto> getByCategory(@RequestParam Long categoryId) {
+        return service.getByCategory(categoryId);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ToolTemplateDto> getTemplateById(@PathVariable Long id) {
-        return ResponseEntity.ok(templateService.getTemplateById(id));
+    public TemplateFullDto getOne(@PathVariable Long id) {
+        return service.getFull(id);
     }
 }

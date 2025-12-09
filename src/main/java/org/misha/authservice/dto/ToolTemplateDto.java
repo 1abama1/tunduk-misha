@@ -6,7 +6,6 @@ import lombok.Data;
 public class ToolTemplateDto {
     private Long id;
     private String name;
-    private String description;
     private Long categoryId;
     private String categoryName;
 }

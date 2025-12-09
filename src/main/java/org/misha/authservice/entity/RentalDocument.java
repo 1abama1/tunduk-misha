@@ -45,7 +45,8 @@ public class RentalDocument {
 
     private LocalDateTime startDateTime;
     private LocalDate expectedReturnDate;
-    private Double amount;
+    private Double dailyPrice;  // Цена за день аренды
+    private Double amount;       // Общая сумма (totalPrice)
     private String comment;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -57,6 +58,10 @@ public class RentalDocument {
     private LocalDateTime closedAt;
     private LocalDateTime terminatedAt;
     private String terminationReason;
+
+    // Сохраняем ID инструмента для истории (даже после отвязки)
+    @Column(name = "tool_id")
+    private Long toolId;
 
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default

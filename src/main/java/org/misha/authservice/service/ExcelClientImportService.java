@@ -27,9 +27,10 @@ public class ExcelClientImportService {
             CreateClientRequest req = new CreateClientRequest(
                     r.getCell(0).getStringCellValue(), // ФИО
                     r.getCell(1).getStringCellValue(), // телефон
+                    null, // whatsapp телефон (в файле нет отдельной колонки)
                     r.getCell(2).getStringCellValue(), // адрес
                     r.getCell(3).getStringCellValue(), // email
-                    null,
+                    null, // birthDate
                     "Импорт из Excel",
                     new PassportDto(
                             r.getCell(4).getStringCellValue(), // серия
@@ -39,7 +40,7 @@ public class ExcelClientImportService {
                             null,
                             r.getCell(8).getStringCellValue() // ИНН
                     ),
-                    null
+                    null // tag
             );
 
             return clientService.create(req);

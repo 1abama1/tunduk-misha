@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class AdminInitializer {
 
     private static final String ADMIN_EMAIL = "admin@admin.admin";
-    private static final String DEFAULT_PASSWORD = "admin123";
+        private static final String DEFAULT_PASSWORD = "admin123";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;

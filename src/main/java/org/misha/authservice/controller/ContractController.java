@@ -1,6 +1,7 @@
 package org.misha.authservice.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.misha.authservice.dto.ActiveContractRowDto;
 import org.misha.authservice.dto.AvailableToolDto;
 import org.misha.authservice.dto.ContractRequest;
 import org.misha.authservice.dto.CreateContractRequest;
@@ -53,6 +54,11 @@ public class ContractController {
     @GetMapping("/{id}")
     public ResponseEntity<RentalDocumentDto> getById(@PathVariable Long id) {
         return ResponseEntity.ok(contractService.getById(id));
+    }
+
+    @GetMapping("/active-table")
+    public ResponseEntity<List<ActiveContractRowDto>> getActiveContractsTable() {
+        return ResponseEntity.ok(contractService.getActiveContractsTable());
     }
 
     @PostMapping("/{id}/close")
