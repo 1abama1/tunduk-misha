@@ -15,7 +15,8 @@ public class ClientCardDto {
     private Long id;
     private String fullName;
     private String phone;
-    private String address;
+    private AddressDto registrationAddress;
+    private AddressDto livingAddress;
     private String email;
     private String tag;
     private List<ActiveContractDto> activeContracts;

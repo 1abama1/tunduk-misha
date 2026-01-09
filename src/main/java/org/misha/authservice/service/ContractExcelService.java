@@ -59,7 +59,10 @@ public class ContractExcelService {
                         .replace("{{CLIENT_FULLNAME}}", safe(client.getFullName()))
                         .replace("{{CLIENT_PHONE}}", safe(client.getPhone()))
                         .replace("{{CLIENT_EMAIL}}", safe(client.getEmail()))
-                        .replace("{{CLIENT_ADDRESS}}", safe(client.getAddress()))
+                        .replace("{{CLIENT_ADDRESS}}", safe(
+                                client.getRegistrationAddress() != null
+                                        ? client.getRegistrationAddress()
+                                        : client.getLivingAddress()))
                         .replace("{{CONTRACT_NUMBER}}", safe(req.getContractNumber()))
                         .replace("{{PRICE}}", formatPrice(req.getPrice()))
                         .replace("{{RENT_PRICE}}", formatPrice(req.getPrice()))

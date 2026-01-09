@@ -17,9 +17,6 @@ public class ContractValidator {
         if (request.getContractNumber() == null || request.getContractNumber().isBlank()) {
             throw new BadRequestException("Не передан номер договора");
         }
-        if (request.getPrice() == null) {
-            throw new BadRequestException("Не передана стоимость");
-        }
     }
 }
 

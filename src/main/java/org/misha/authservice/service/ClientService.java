@@ -1,12 +1,14 @@
 package org.misha.authservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.misha.authservice.dto.AddressDto;
 import org.misha.authservice.dto.ClientDto;
 import org.misha.authservice.dto.ClientImageDto;
 import org.misha.authservice.dto.ClientLightSearchDto;
 import org.misha.authservice.dto.CreateClientRequest;
 import org.misha.authservice.dto.PassportDto;
 import org.misha.authservice.dto.UpdateClientRequest;
+import org.misha.authservice.entity.Address;
 import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.ClientPassport;
 import org.misha.authservice.entity.RentalDocument;
@@ -43,7 +45,8 @@ public class ClientService {
                 .fullName(req.fullName())
                 .phone(req.phone())
                 .whatsappPhone(req.whatsappPhone())
-                .address(req.address())
+                .registrationAddress(toAddress(req.registrationAddress()))
+                .livingAddress(toAddress(req.livingAddress()))
                 .email(req.email())
                 .birthDate(req.birthDate())
                 .comment(req.comment())
@@ -71,7 +74,7 @@ public class ClientService {
     public ClientDto get(Long id) {
         Client client = clientRepository.findByIdWithDocuments(id)
                 .orElseThrow(() -> new AppException("CLIENT_NOT_FOUND", "Клиент не найден", HttpStatus.NOT_FOUND));
-        
+
         // Fetch tools for documents separately to avoid MultipleBagFetchException
         if (!client.getDocuments().isEmpty()) {
             List<Long> documentIds = client.getDocuments().stream()
@@ -79,7 +82,7 @@ public class ClientService {
                     .toList();
             rentalDocumentRepository.findByIdsWithTools(documentIds);
         }
-        
+
         return clientMapper.toDto(client);
     }
 
@@ -87,7 +90,7 @@ public class ClientService {
     public List<ClientDto> getAll() {
         // First fetch clients with documents
         List<Client> clients = clientRepository.findAllWithDocuments();
-        
+
         // Then fetch tools for all documents to avoid MultipleBagFetchException
         if (!clients.isEmpty()) {
             List<Long> documentIds = clients.stream()
@@ -98,7 +101,7 @@ public class ClientService {
                 rentalDocumentRepository.findByIdsWithTools(documentIds);
             }
         }
-        
+
         return clients.stream()
                 .map(client -> {
                     ClientDto dto = clientMapper.toDto(client);
@@ -124,7 +127,8 @@ public class ClientService {
         if (req.fullName() != null) client.setFullName(req.fullName());
         if (req.phone() != null) client.setPhone(req.phone());
         if (req.whatsappPhone() != null) client.setWhatsappPhone(req.whatsappPhone());
-        if (req.address() != null) client.setAddress(req.address());
+        if (req.registrationAddress() != null) client.setRegistrationAddress(toAddress(req.registrationAddress()));
+        if (req.livingAddress() != null) client.setLivingAddress(toAddress(req.livingAddress()));
         if (req.email() != null) client.setEmail(req.email());
         if (req.birthDate() != null) client.setBirthDate(req.birthDate());
         if (req.comment() != null) client.setComment(req.comment());
@@ -137,7 +141,7 @@ public class ClientService {
         // Перезагружаем клиента с документами
         Client updatedClient = clientRepository.findByIdWithDocuments(id)
                 .orElse(client);
-        
+
         // Fetch tools for documents separately to avoid MultipleBagFetchException
         if (!updatedClient.getDocuments().isEmpty()) {
             List<Long> documentIds = updatedClient.getDocuments().stream()
@@ -145,7 +149,7 @@ public class ClientService {
                     .toList();
             rentalDocumentRepository.findByIdsWithTools(documentIds);
         }
-        
+
         return clientMapper.toDto(updatedClient);
     }
 
@@ -177,6 +181,11 @@ public class ClientService {
         passport.setIssueDate(dto.issueDate());
         passport.setInn(dto.inn());
         client.setPassport(passport);
+    }
+
+    private Address toAddress(AddressDto dto) {
+        if (dto == null) return null;
+        return new Address(dto.region(), dto.street());
     }
 }
 

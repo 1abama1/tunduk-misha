@@ -1,10 +1,13 @@
 package org.misha.authservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -51,10 +54,21 @@ public class Client {
     @Column(unique = true)
     private String email;
 
-    private String address;
     private String whatsappPhone;
-    private String registrationAddress;
-    private String livingAddress;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "region", column = @Column(name = "reg_region")),
+            @AttributeOverride(name = "street", column = @Column(name = "reg_street"))
+    })
+    private Address registrationAddress; // Адрес из паспорта
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "region", column = @Column(name = "live_region")),
+            @AttributeOverride(name = "street", column = @Column(name = "live_street"))
+    })
+    private Address livingAddress;       // Фактический адрес проживания
 
     private LocalDate birthDate;
     private Integer birthYear;

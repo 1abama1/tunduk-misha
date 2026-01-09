@@ -5,7 +5,8 @@ public record ClientSearchResultDto(
         String fullName,
         String phone,
         String email,
-        String address,
+        String registrationAddress,
+        String livingAddress,
         String tag,
         int documentsCount
 ) {

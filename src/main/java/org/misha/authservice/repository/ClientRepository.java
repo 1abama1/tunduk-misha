@@ -55,7 +55,8 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
             WHERE (:query IS NULL OR :query = ''
                 OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR LOWER(c.address) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(c.registrationAddress) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(c.livingAddress) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(c.email) LIKE LOWER(CONCAT('%', :query, '%')))
             AND (:tag IS NULL OR c.tag = :tag)
             AND (:hasDocuments IS NULL 

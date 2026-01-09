@@ -17,7 +17,8 @@ public class ClientDto {
     private String fullName;
     private String phone;
     private String whatsappPhone;
-    private String address;
+    private AddressDto registrationAddress;
+    private AddressDto livingAddress;
     private String email;
     private LocalDate birthDate;
     private String comment;

@@ -1,10 +1,12 @@
 package org.misha.authservice.mapper;
 
 import lombok.RequiredArgsConstructor;
+import org.misha.authservice.dto.AddressDto;
 import org.misha.authservice.dto.ClientDto;
 import org.misha.authservice.dto.ClientImageDto;
 import org.misha.authservice.dto.DocumentDto;
 import org.misha.authservice.dto.PassportDto;
+import org.misha.authservice.entity.Address;
 import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.ClientImage;
 import org.misha.authservice.entity.ClientPassport;
@@ -28,7 +30,8 @@ public class ClientMapper {
                 .fullName(c.getFullName())
                 .phone(c.getPhone())
                 .whatsappPhone(c.getWhatsappPhone())
-                .address(c.getAddress())
+                .registrationAddress(toAddressDto(c.getRegistrationAddress()))
+                .livingAddress(toAddressDto(c.getLivingAddress()))
                 .email(c.getEmail())
                 .birthDate(c.getBirthDate())
                 .comment(c.getComment())
@@ -42,6 +45,11 @@ public class ClientMapper {
                                         .toList()
                 )
                 .build();
+    }
+
+    private AddressDto toAddressDto(Address address) {
+        if (address == null) return null;
+        return new AddressDto(address.getRegion(), address.getStreet());
     }
 
     public DocumentDto toDocDto(RentalDocument d) {

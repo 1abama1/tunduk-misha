@@ -16,6 +16,7 @@ import org.misha.authservice.entity.RentalDocument;
 import org.misha.authservice.entity.Tool;
 import org.misha.authservice.exception.BadRequestException;
 import org.misha.authservice.exception.NotFoundException;
+import org.misha.authservice.mapper.ExcelContractMapper;
 import org.misha.authservice.repository.ClientRepository;
 import org.misha.authservice.repository.RentalDocumentRepository;
 import org.misha.authservice.repository.ToolRepository;
@@ -40,6 +41,8 @@ public class ContractService {
     private final ContractValidator contractValidator;
     private final ToolRentalGuard toolRentalGuard;
     private final AuditLogService auditLogService;
+    private final ExcelGeneratorService excelGeneratorService;
+    private final ExcelContractMapper excelContractMapper;
 
     private String generateDailyContractNumber() {
         LocalDate today = LocalDate.now();
@@ -72,14 +75,17 @@ public class ContractService {
         toolRentalGuard.ensureAvailableForRental(tool);
 
         LocalDateTime startDateTime = req.startDateTime() != null ? req.startDateTime() : LocalDateTime.now();
-        String contractNumber = generateDailyContractNumber();
+        String contractNumber = (req.contractNumber() != null && !req.contractNumber().isBlank())
+                ? req.contractNumber()
+                : generateDailyContractNumber();
 
         RentalDocument doc = RentalDocument.builder()
                 .client(client)
                 .contractNumber(contractNumber)
                 .startDateTime(startDateTime)
-                .expectedReturnDate(req.expectedReturnDate())
-                .amount(req.totalAmount())
+                .expectedReturnDate(null)
+                .amount(null)
+                .dailyPrice(null)
                 .build();
 
         documentRepository.save(doc);
@@ -171,14 +177,6 @@ public class ContractService {
             );
         }
 
-        if (req.expectedReturnDate() != null) {
-            doc.setExpectedReturnDate(req.expectedReturnDate());
-        }
-
-        if (req.amount() != null) {
-            doc.setAmount(req.amount());
-        }
-
         if (req.comment() != null) {
             doc.setComment(req.comment());
         }
@@ -187,8 +185,6 @@ public class ContractService {
 
         // Audit logging
         Map<String, Object> changes = new java.util.HashMap<>();
-        if (req.expectedReturnDate() != null) changes.put("expectedReturnDate", req.expectedReturnDate());
-        if (req.amount() != null) changes.put("amount", req.amount());
         if (req.comment() != null) changes.put("comment", "updated");
         auditLogService.logUpdate("Contract", id, changes);
 
@@ -240,6 +236,79 @@ public class ContractService {
         ));
     }
 
+    /**
+     * Восстанавливает ранее закрытый договор (CLOSED) в активное состояние.
+     * Не позволяет восстанавливать расторгнутые договоры (TERMINATED).
+     */
+    @Transactional
+    public void restoreContract(Long contractId) {
+        RentalDocument doc = documentRepository.findById(contractId)
+                .orElseThrow(() -> new AppException(
+                        "CONTRACT_NOT_FOUND",
+                        "Договор не найден",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        // Нельзя восстановить расторгнутый договор
+        if (doc.getTerminatedAt() != null) {
+            throw new AppException(
+                    "CONTRACT_TERMINATED",
+                    "Расторгнутый договор нельзя восстановить",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // Если договор уже активен (нет closedAt), восстанавливать нечего
+        if (doc.getClosedAt() == null) {
+            throw new AppException(
+                    "CONTRACT_ALREADY_ACTIVE",
+                    "Договор уже активен",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        // Для восстановления должен быть сохранён toolId
+        if (doc.getToolId() == null) {
+            throw new AppException(
+                    "TOOL_ID_MISSING",
+                    "Невозможно восстановить договор — не найден инструмент",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        Tool tool = toolRepository.findById(doc.getToolId())
+                .orElseThrow(() -> new AppException(
+                        "TOOL_NOT_FOUND",
+                        "Инструмент не найден",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        // Инструмент не должен быть уже привязан к другому договору
+        if (tool.getContract() != null && !Objects.equals(tool.getContract().getId(), doc.getId())) {
+            throw new AppException(
+                    "TOOL_BUSY",
+                    "Инструмент уже используется в другом договоре",
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        // Возвращаем связь инструмент ↔ договор
+        tool.setContract(doc);
+        toolRepository.save(tool);
+
+        // Сбрасываем закрытие
+        doc.setClosedAt(null);
+        doc.setTerminatedAt(null);
+        doc.setTerminationReason(null);
+        documentRepository.save(doc);
+
+        // Audit logging
+        auditLogService.logUpdate("Contract", contractId, Map.of(
+                "action", "RESTORE",
+                "toolId", tool.getId()
+        ));
+    }
+
     @Transactional
     public byte[] generateContractFileAndMarkClient(ContractRequest request) throws IOException {
         contractValidator.validate(request);
@@ -248,6 +317,61 @@ public class ContractService {
                 .orElseThrow(() -> new NotFoundException("Клиент не найден"));
 
         return contractExcelService.generate(client, request);
+    }
+
+    /**
+     * Генерирует Excel файл договора по ID договора.
+     * Использует новый ExcelGeneratorService с точным маппингом ячеек.
+     * 
+     * @param contractId ID договора
+     * @return массив байтов готового .xlsx файла
+     */
+    @Transactional(readOnly = true)
+    public byte[] generateContractExcelById(Long contractId) {
+        // Получаем договор с клиентом
+        RentalDocument document = documentRepository.findById(contractId)
+                .orElseThrow(() -> new AppException(
+                        "CONTRACT_NOT_FOUND",
+                        "Договор не найден",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        // Загружаем клиента с паспортом
+        Client client = document.getClient();
+        if (client == null) {
+            throw new AppException(
+                    "CLIENT_NOT_FOUND",
+                    "Клиент не найден для договора",
+                    HttpStatus.NOT_FOUND
+            );
+        }
+        
+        // Загружаем клиента с паспортом, если он еще не загружен
+        if (client.getPassport() == null) {
+            client = clientRepository.findByIdWithDocuments(client.getId())
+                    .orElse(client);
+        }
+
+        // Получаем инструмент
+        Tool tool = null;
+        if (document.getToolId() != null) {
+            tool = toolRepository.findByIdWithTemplateAndContract(document.getToolId())
+                    .orElse(null);
+        }
+        
+        // Если не нашли по toolId, пробуем найти по contractId
+        if (tool == null) {
+            List<Tool> tools = toolRepository.findByContractIdWithTemplate(contractId);
+            if (!tools.isEmpty()) {
+                tool = tools.get(0);
+            }
+        }
+
+        // Преобразуем в DTO
+        var excelDto = excelContractMapper.toExcelContractDto(document, tool, client);
+
+        // Генерируем Excel
+        return excelGeneratorService.generateContractExcel(excelDto);
     }
 
     @Transactional(readOnly = true)
@@ -369,8 +493,11 @@ public class ContractService {
             return null;
         }
 
-        // Получаем инструмент (берём первый, если их несколько)
-        Tool tool = doc.getTools().isEmpty() ? null : doc.getTools().get(0);
+        // Получаем инструмент по сохранённому toolId (doc.getTools() не используется)
+        Tool tool = null;
+        if (doc.getToolId() != null) {
+            tool = toolRepository.findById(doc.getToolId()).orElse(null);
+        }
 
         String toolName;
         String serialNumber;

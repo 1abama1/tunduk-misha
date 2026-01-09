@@ -2,9 +2,11 @@ package org.misha.authservice.service;
 
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.ActiveContractDto;
+import org.misha.authservice.dto.AddressDto;
 import org.misha.authservice.dto.ClientCardDto;
 import org.misha.authservice.dto.ClientImageDto;
 import org.misha.authservice.dto.ContractHistoryDto;
+import org.misha.authservice.entity.Address;
 import org.misha.authservice.entity.RentalDocument;
 import org.misha.authservice.entity.Tool;
 import org.misha.authservice.exception.AppException;
@@ -63,7 +65,8 @@ public class ClientCardService {
                 .id(client.getId())
                 .fullName(client.getFullName())
                 .phone(client.getPhone())
-                .address(client.getAddress())
+                .registrationAddress(toAddressDto(client.getRegistrationAddress()))
+                .livingAddress(toAddressDto(client.getLivingAddress()))
                 .email(client.getEmail())
                 .tag(client.getTag() != null ? client.getTag().name() : null)
                 .activeContracts(active)
@@ -76,6 +79,11 @@ public class ClientCardService {
                         ))
                         .toList())
                 .build();
+    }
+
+    private AddressDto toAddressDto(Address address) {
+        if (address == null) return null;
+        return new AddressDto(address.getRegion(), address.getStreet());
     }
 
     private ActiveContractDto toActiveContract(RentalDocument doc) {

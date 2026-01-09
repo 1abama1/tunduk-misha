@@ -82,7 +82,8 @@ public class AdminClientService {
                         defaultString(c.getFullName()),
                         defaultString(c.getPhone()),
                         defaultString(c.getEmail()),
-                        defaultString(c.getAddress()),
+                        addressToString(c.getRegistrationAddress()),
+                        addressToString(c.getLivingAddress()),
                         c.getTag() != null ? c.getTag().name() : null,
                         c.getDocuments() != null ? c.getDocuments().size() : 0
                 ))
@@ -169,6 +170,16 @@ public class AdminClientService {
 
     private String defaultString(String value) {
         return value == null ? "" : value;
+    }
+
+    private String addressToString(org.misha.authservice.entity.Address address) {
+        if (address == null) return "";
+        String region = address.getRegion() != null ? address.getRegion() : "";
+        String street = address.getStreet() != null ? address.getStreet() : "";
+        if (region.isBlank() && street.isBlank()) return "";
+        if (street.isBlank()) return region;
+        if (region.isBlank()) return street;
+        return region + ", " + street;
     }
 }
 
