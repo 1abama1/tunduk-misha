@@ -42,8 +42,7 @@ public class ExcelGeneratorService {
         try (
                 InputStream is = new ClassPathResource(TEMPLATE_PATH).getInputStream();
                 Workbook workbook = new XSSFWorkbook(is);
-                ByteArrayOutputStream out = new ByteArrayOutputStream()
-        ) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             fillContractSheet(workbook, dto);
             fillToolPriceSheet(workbook, dto);
             fillActSheet(workbook, dto);
@@ -101,7 +100,8 @@ public class ExcelGeneratorService {
             set(sheet, "A23", dto.client().birthYear().toString());
         }
 
-        // K22 — НЕ ТРОГАЕМ (ручное поле)
+        // K22 — Адрес объекта
+        set(sheet, "K22", dto.client().objectAddress());
     }
 
     // -------------------------------------------------------
@@ -196,7 +196,7 @@ public class ExcelGeneratorService {
     /**
      * Получает или создаёт ячейку по адресу (например, "A12").
      * 
-     * @param sheet лист
+     * @param sheet   лист
      * @param cellRef адрес ячейки в формате Excel (например, "A12", "AB5")
      * @return ячейка
      */
@@ -251,4 +251,3 @@ public class ExcelGeneratorService {
         return colIdx - 1;
     }
 }
-

@@ -37,6 +37,7 @@ public class ExcelClientImportService {
                     null, // whatsappPhone (в файле нет отдельной колонки)
                     registrationAddress,
                     null, // livingAddress (в файле нет отдельной колонки)
+                    null, // objectAddress
                     r.getCell(3).getStringCellValue(), // email
                     null, // birthDate
                     "Импорт из Excel", // comment
@@ -55,5 +56,3 @@ public class ExcelClientImportService {
         }
     }
 }
-
-

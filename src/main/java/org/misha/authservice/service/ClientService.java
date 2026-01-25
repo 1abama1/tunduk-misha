@@ -47,6 +47,7 @@ public class ClientService {
                 .whatsappPhone(req.whatsappPhone())
                 .registrationAddress(toAddress(req.registrationAddress()))
                 .livingAddress(toAddress(req.livingAddress()))
+                .objectAddress(req.objectAddress())
                 .email(req.email())
                 .birthDate(req.birthDate())
                 .comment(req.comment())
@@ -63,10 +64,8 @@ public class ClientService {
                         .map(img -> new ClientImageDto(
                                 img.getId(),
                                 img.getFileName(),
-                                img.getFileType()
-                        ))
-                        .toList()
-        );
+                                img.getFileType()))
+                        .toList());
         return dto;
     }
 
@@ -110,10 +109,8 @@ public class ClientService {
                                     .map(img -> new ClientImageDto(
                                             img.getId(),
                                             img.getFileName(),
-                                            img.getFileType()
-                                    ))
-                                    .toList()
-                    );
+                                            img.getFileType()))
+                                    .toList());
                     return dto;
                 })
                 .toList();
@@ -124,15 +121,26 @@ public class ClientService {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new AppException("CLIENT_NOT_FOUND", "Клиент не найден", HttpStatus.NOT_FOUND));
 
-        if (req.fullName() != null) client.setFullName(req.fullName());
-        if (req.phone() != null) client.setPhone(req.phone());
-        if (req.whatsappPhone() != null) client.setWhatsappPhone(req.whatsappPhone());
-        if (req.registrationAddress() != null) client.setRegistrationAddress(toAddress(req.registrationAddress()));
-        if (req.livingAddress() != null) client.setLivingAddress(toAddress(req.livingAddress()));
-        if (req.email() != null) client.setEmail(req.email());
-        if (req.birthDate() != null) client.setBirthDate(req.birthDate());
-        if (req.comment() != null) client.setComment(req.comment());
-        if (req.tag() != null) client.setTag(req.tag());
+        if (req.fullName() != null)
+            client.setFullName(req.fullName());
+        if (req.phone() != null)
+            client.setPhone(req.phone());
+        if (req.whatsappPhone() != null)
+            client.setWhatsappPhone(req.whatsappPhone());
+        if (req.registrationAddress() != null)
+            client.setRegistrationAddress(toAddress(req.registrationAddress()));
+        if (req.livingAddress() != null)
+            client.setLivingAddress(toAddress(req.livingAddress()));
+        if (req.objectAddress() != null)
+            client.setObjectAddress(req.objectAddress());
+        if (req.email() != null)
+            client.setEmail(req.email());
+        if (req.birthDate() != null)
+            client.setBirthDate(req.birthDate());
+        if (req.comment() != null)
+            client.setComment(req.comment());
+        if (req.tag() != null)
+            client.setTag(req.tag());
 
         applyPassport(client, req.passport());
 
@@ -184,8 +192,8 @@ public class ClientService {
     }
 
     private Address toAddress(AddressDto dto) {
-        if (dto == null) return null;
+        if (dto == null)
+            return null;
         return new Address(dto.region(), dto.street());
     }
 }
-

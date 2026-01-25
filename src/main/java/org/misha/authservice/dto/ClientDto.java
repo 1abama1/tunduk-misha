@@ -19,6 +19,7 @@ public class ClientDto {
     private String whatsappPhone;
     private AddressDto registrationAddress;
     private AddressDto livingAddress;
+    private String objectAddress;
     private String email;
     private LocalDate birthDate;
     private String comment;
@@ -27,4 +28,3 @@ public class ClientDto {
     private List<DocumentDto> documents;
     private List<ClientImageDto> images;
 }
-

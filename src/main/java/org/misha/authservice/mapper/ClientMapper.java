@@ -32,30 +32,31 @@ public class ClientMapper {
                 .whatsappPhone(c.getWhatsappPhone())
                 .registrationAddress(toAddressDto(c.getRegistrationAddress()))
                 .livingAddress(toAddressDto(c.getLivingAddress()))
+                .objectAddress(c.getObjectAddress())
                 .email(c.getEmail())
                 .birthDate(c.getBirthDate())
                 .comment(c.getComment())
                 .passport(toPassportDto(c.getPassport()))
                 .tag(c.getTag() != null ? c.getTag().name() : null)
                 .documents(
-                        c.getDocuments() == null || c.getDocuments().isEmpty() 
-                                ? new ArrayList<>() 
+                        c.getDocuments() == null || c.getDocuments().isEmpty()
+                                ? new ArrayList<>()
                                 : c.getDocuments().stream()
                                         .map(this::toDocDto)
-                                        .toList()
-                )
+                                        .toList())
                 .build();
     }
 
     private AddressDto toAddressDto(Address address) {
-        if (address == null) return null;
+        if (address == null)
+            return null;
         return new AddressDto(address.getRegion(), address.getStreet());
     }
 
     public DocumentDto toDocDto(RentalDocument d) {
         // Получаем инструмент из загруженной коллекции
-        Tool tool = d.getTools() != null && !d.getTools().isEmpty() 
-                ? d.getTools().get(0) 
+        Tool tool = d.getTools() != null && !d.getTools().isEmpty()
+                ? d.getTools().get(0)
                 : null;
 
         // Если инструмент не найден в коллекции (например, после закрытия контракта),
@@ -64,7 +65,7 @@ public class ClientMapper {
         if (tool == null && toolId != null) {
             tool = toolRepository.findByIdWithTemplateAndContract(toolId).orElse(null);
         }
-        
+
         // Если все еще не найден, пытаемся найти через репозиторий по contractId
         if (tool == null) {
             List<Tool> tools = toolRepository.findByContractIdWithTemplate(d.getId());
@@ -100,7 +101,7 @@ public class ClientMapper {
                 .startDateTime(d.getStartDateTime())
                 .expectedReturnDate(d.getExpectedReturnDate())
                 .amount(d.getAmount())
-                .toolId(toolId)  // Используем сохраненный toolId или ID найденного инструмента
+                .toolId(toolId) // Используем сохраненный toolId или ID найденного инструмента
                 .closedAt(d.getClosedAt())
                 .terminatedAt(d.getTerminatedAt())
                 .terminationReason(d.getTerminationReason())
@@ -118,8 +119,7 @@ public class ClientMapper {
                 passport.getIssuedBy(),
                 passport.getSubdivisionCode(),
                 passport.getIssueDate(),
-                passport.getInn()
-        );
+                passport.getInn());
     }
 
     public List<ClientImageDto> toImageDtos(List<ClientImage> images) {
@@ -130,9 +130,7 @@ public class ClientMapper {
                 .map(img -> new ClientImageDto(
                         img.getId(),
                         img.getFileName(),
-                        img.getFileType()
-                ))
+                        img.getFileType()))
                 .toList();
     }
 }
-

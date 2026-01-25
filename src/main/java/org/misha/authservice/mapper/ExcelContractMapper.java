@@ -86,8 +86,7 @@ public class ExcelContractMapper {
     public ExcelContractDto toExcelContractDto(
             RentalDocument document,
             Tool tool,
-            Client client
-    ) {
+            Client client) {
         // Формируем toolFullName
         String toolFullName = buildToolFullName(tool);
 
@@ -113,8 +112,7 @@ public class ExcelContractMapper {
                 pricePerDay,
                 depositAmount,
                 clientDto,
-                rentalDto
-        );
+                rentalDto);
     }
 
     /**
@@ -123,14 +121,13 @@ public class ExcelContractMapper {
     private ClientExcelDto toClientExcelDto(Client client) {
         if (client == null) {
             return new ClientExcelDto(
-                    "", "", "", "", "", "", "", "", null, null, "", null
-            );
+                    "", "", "", "", "", "", "", "", null, null, "", "", null);
         }
 
         // Телефон
         String phone = client.getPhone() != null ? client.getPhone() : "";
 
-        // WhatsApp (если совпадает с phone, то пустая строка)
+        // WhatsApp
         String whatsapp = client.getWhatsappPhone();
         if (whatsapp != null && whatsapp.equals(phone)) {
             whatsapp = "";
@@ -147,21 +144,19 @@ public class ExcelContractMapper {
         String passportIssuedDate = "";
 
         if (passport != null) {
-            // Определяем тип паспорта
             if (passport.getSeries() != null && !passport.getSeries().isBlank()) {
                 passportType = PassportType.fromSeries(passport.getSeries()).getCode();
             } else {
                 passportType = PassportType.OTHER.getCode();
             }
 
-            // Номер паспорта (только number, без серии - для Excel G19)
             if (passport.getNumber() != null && !passport.getNumber().isBlank()) {
                 passportNumber = passport.getNumber();
             }
 
             passportIssuedBy = passport.getIssuedBy() != null ? passport.getIssuedBy() : "";
             passportDepartmentCode = passport.getSubdivisionCode() != null ? passport.getSubdivisionCode() : "";
-            
+
             if (passport.getIssueDate() != null) {
                 passportIssuedDate = passport.getIssueDate().format(DATE_FORMATTER);
             }
@@ -170,7 +165,6 @@ public class ExcelContractMapper {
         // Адреса
         AddressDto registrationAddress = toAddressDto(client.getRegistrationAddress());
         AddressDto livingAddress = toAddressDto(client.getLivingAddress());
-        // Если фактический адрес не указан, используем адрес регистрации
         if (livingAddress == null && registrationAddress != null) {
             livingAddress = registrationAddress;
         }
@@ -193,9 +187,9 @@ public class ExcelContractMapper {
                 passportIssuedDate,
                 registrationAddress,
                 livingAddress,
+                client.getObjectAddress() != null ? client.getObjectAddress() : "",
                 pin,
-                birthYear
-        );
+                birthYear);
     }
 
     /**
@@ -230,8 +224,8 @@ public class ExcelContractMapper {
     }
 
     private AddressDto toAddressDto(Address address) {
-        if (address == null) return null;
+        if (address == null)
+            return null;
         return new AddressDto(address.getRegion(), address.getStreet());
     }
 }
-

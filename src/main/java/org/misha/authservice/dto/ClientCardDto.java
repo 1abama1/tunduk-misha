@@ -17,10 +17,10 @@ public class ClientCardDto {
     private String phone;
     private AddressDto registrationAddress;
     private AddressDto livingAddress;
+    private String objectAddress;
     private String email;
     private String tag;
     private List<ActiveContractDto> activeContracts;
     private List<ContractHistoryDto> history;
     private List<ClientImageDto> images;
 }
-
