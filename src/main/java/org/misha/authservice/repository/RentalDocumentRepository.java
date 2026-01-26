@@ -11,6 +11,8 @@ import java.util.Optional;
 
 public interface RentalDocumentRepository extends JpaRepository<RentalDocument, Long> {
 
+  Optional<RentalDocument> findByOfflineId(String offlineId);
+
   List<RentalDocument> findByClientId(Long clientId);
 
   @Query("SELECT d FROM RentalDocument d WHERE d.client.id = :clientId AND d.returnDate IS NULL AND d.terminatedAt IS NULL")

@@ -44,17 +44,32 @@ public class ContractService {
     private final ExcelGeneratorService excelGeneratorService;
     private final ExcelContractMapper excelContractMapper;
 
+    private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private final java.security.SecureRandom random = new java.security.SecureRandom();
+
+    private String generateRandomSuffix(int length) {
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(CHARS.charAt(random.nextInt(CHARS.length())));
+        }
+        return sb.toString();
+    }
+
     private String generateDailyContractNumber() {
         LocalDate today = LocalDate.now();
+        String prefix = "R-" + today + "-";
+        String contractNumber;
+        int attempts = 0;
 
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        do {
+            contractNumber = prefix + generateRandomSuffix(3);
+            attempts++;
+            if (attempts > 100) { // Safety break
+                contractNumber = prefix + generateRandomSuffix(6);
+            }
+        } while (documentRepository.existsByContractNumber(contractNumber));
 
-        long countToday = documentRepository.countCreatedBetween(startOfDay, endOfDay);
-        long next = countToday + 1;
-
-        // формат R-YYYY-MM-DD-001, R-2025-12-04-002 и т.п.
-        return "R-" + today + "-" + String.format("%03d", next);
+        return contractNumber;
     }
 
     @Transactional

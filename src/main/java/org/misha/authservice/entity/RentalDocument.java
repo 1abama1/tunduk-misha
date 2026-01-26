@@ -12,6 +12,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.UniqueConstraint;
 import lombok.*;
@@ -51,9 +52,13 @@ public class RentalDocument {
     private LocalDateTime terminatedAt;
     private String terminationReason;
 
-    // Сохраняем ID инструмента для истории (даже после отвязки)
     @Column(name = "tool_id")
     private Long toolId;
+
+    private LocalDateTime updatedAt;
+
+    @Column(name = "offline_id")
+    private String offlineId;
 
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
@@ -62,6 +67,12 @@ public class RentalDocument {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     /**
