@@ -27,11 +27,9 @@ public class ToolHistoryService {
                 .contractId(doc.getId())
                 .clientName(doc.getClient() != null ? doc.getClient().getFullName() : null)
                 .startDate(doc.getStartDateTime())
-                .expectedReturn(doc.getExpectedReturnDate())
-                .closedAt(doc.getClosedAt())
+                .returnDate(doc.getReturnDate())
                 .amount(doc.getAmount())
                 .status(doc.getStatus() != null ? doc.getStatus().name() : null)
                 .build();
     }
 }
-

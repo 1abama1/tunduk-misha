@@ -16,7 +16,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,8 +37,7 @@ public class AdminClientService {
             Boolean consentPersonalData, // У клиентов нет — игнорируем
             String contractNumber,
             String sort,
-            String direction
-    ) {
+            String direction) {
         // SQL-фильтрация на уровне базы данных
         Tag tag = null;
         if (StringUtils.hasText(tags)) {
@@ -56,8 +54,7 @@ public class AdminClientService {
                 hasDocuments,
                 StringUtils.hasText(contractNumber) ? contractNumber : null,
                 minDocs,
-                maxDocs
-        );
+                maxDocs);
 
         // Сортировка (можно также вынести в SQL, но для простоты оставляем в памяти)
         Comparator<Client> cmp = switch (sort) {
@@ -85,8 +82,7 @@ public class AdminClientService {
                         addressToString(c.getRegistrationAddress()),
                         addressToString(c.getLivingAddress()),
                         c.getTag() != null ? c.getTag().name() : null,
-                        c.getDocuments() != null ? c.getDocuments().size() : 0
-                ))
+                        c.getDocuments() != null ? c.getDocuments().size() : 0))
                 .toList();
     }
 
@@ -94,7 +90,7 @@ public class AdminClientService {
     public ClientDto getClientFull(Long clientId) {
         Client client = clientRepository.findByIdWithDocuments(clientId)
                 .orElseThrow(() -> new AppException("CLIENT_NOT_FOUND", "Client not found", HttpStatus.NOT_FOUND));
-        
+
         // Fetch tools for documents separately to avoid MultipleBagFetchException
         if (!client.getDocuments().isEmpty()) {
             List<Long> documentIds = client.getDocuments().stream()
@@ -109,10 +105,8 @@ public class AdminClientService {
                         .map(img -> new ClientImageDto(
                                 img.getId(),
                                 img.getFileName(),
-                                img.getFileType()
-                        ))
-                        .toList()
-        );
+                                img.getFileType()))
+                        .toList());
         return dto;
     }
 
@@ -128,17 +122,15 @@ public class AdminClientService {
                         doc.getId(),
                         doc.getContractNumber(),
                         doc.getStartDateTime(),
-                        doc.getExpectedReturnDate(),
                         doc.getDailyPrice(),
                         doc.getAmount(),
                         doc.getCreatedAt(),
                         doc.getClient().getId(),
-                        doc.getClosedAt(),
+                        doc.getReturnDate(),
                         doc.getTerminatedAt(),
                         doc.getTerminationReason(),
                         doc.getStatus(),
-                        doc.getComment()
-                ))
+                        doc.getComment()))
                 .toList();
     }
 
@@ -154,17 +146,15 @@ public class AdminClientService {
                         doc.getId(),
                         doc.getContractNumber(),
                         doc.getStartDateTime(),
-                        doc.getExpectedReturnDate(),
                         doc.getDailyPrice(),
                         doc.getAmount(),
                         doc.getCreatedAt(),
                         doc.getClient().getId(),
-                        doc.getClosedAt(),
+                        doc.getReturnDate(),
                         doc.getTerminatedAt(),
                         doc.getTerminationReason(),
                         doc.getStatus(),
-                        doc.getComment()
-                ))
+                        doc.getComment()))
                 .toList();
     }
 
@@ -173,13 +163,16 @@ public class AdminClientService {
     }
 
     private String addressToString(org.misha.authservice.entity.Address address) {
-        if (address == null) return "";
+        if (address == null)
+            return "";
         String region = address.getRegion() != null ? address.getRegion() : "";
         String street = address.getStreet() != null ? address.getStreet() : "";
-        if (region.isBlank() && street.isBlank()) return "";
-        if (street.isBlank()) return region;
-        if (region.isBlank()) return street;
+        if (region.isBlank() && street.isBlank())
+            return "";
+        if (street.isBlank())
+            return region;
+        if (region.isBlank())
+            return street;
         return region + ", " + street;
     }
 }
-

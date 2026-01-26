@@ -18,12 +18,10 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import org.misha.authservice.entity.Branch;
 
 @Entity
 @Table(name = "tools")
@@ -63,15 +61,15 @@ public class Tool {
     private RentalDocument contract;
 
     // Бизнес-поля экземпляра
-    private String name;            // Название
-    private String article;          // Артикул
-    private Double deposit;         // Залог
-    private Double purchasePrice;   // Цена закупки
-    private Double dailyPrice;      // Цена в сутки
+    private String name; // Название
+    private String article; // Артикул
+    private Double deposit; // Залог
+    private Double purchasePrice; // Цена закупки
+    private Double dailyPrice; // Цена в сутки
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id")
     private Branch branch;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rental_point_id")
     private RentalPoint rentalPoint;

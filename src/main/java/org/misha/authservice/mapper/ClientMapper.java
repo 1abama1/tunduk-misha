@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.AddressDto;
 import org.misha.authservice.dto.ClientDto;
 import org.misha.authservice.dto.ClientImageDto;
+import org.misha.authservice.dto.DocumentDetailDto;
 import org.misha.authservice.dto.DocumentDto;
 import org.misha.authservice.dto.PassportDto;
+import org.misha.authservice.dto.ToolDto;
 import org.misha.authservice.entity.Address;
 import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.ClientImage;
@@ -99,13 +101,76 @@ public class ClientMapper {
                 .toolName(toolName)
                 .serialNumber(serialNumber)
                 .startDateTime(d.getStartDateTime())
-                .expectedReturnDate(d.getExpectedReturnDate())
                 .amount(d.getAmount())
                 .toolId(toolId) // Используем сохраненный toolId или ID найденного инструмента
-                .closedAt(d.getClosedAt())
+                .returnDate(d.getReturnDate())
                 .terminatedAt(d.getTerminatedAt())
                 .terminationReason(d.getTerminationReason())
                 .status(d.getStatus())
+                .build();
+    }
+
+    public DocumentDetailDto toDetailDto(RentalDocument d) {
+        // Получаем инструмент
+        Tool tool = d.getTools() != null && !d.getTools().isEmpty()
+                ? d.getTools().get(0)
+                : null;
+
+        Long toolId = d.getToolId();
+        if (tool == null && toolId != null) {
+            tool = toolRepository.findByIdWithTemplateAndContract(toolId).orElse(null);
+        }
+
+        if (tool == null) {
+            List<Tool> tools = toolRepository.findByContractIdWithTemplate(d.getId());
+            if (!tools.isEmpty()) {
+                tool = tools.get(0);
+            }
+        }
+
+        ToolDto toolDto = tool != null ? ToolDto.fromEntity(tool) : null;
+
+        // Для обратной совместимости или если в tool нет инфы, но она есть в d
+        if (toolDto != null && toolDto.getCategoryName() == null && tool != null && tool.getTemplate() != null
+                && tool.getTemplate().getCategory() != null) {
+            toolDto.setCategoryName(tool.getTemplate().getCategory().getName());
+        }
+
+        return DocumentDetailDto.builder()
+                .id(d.getId())
+                .contractNumber(d.getContractNumber())
+                .amount(d.getAmount())
+                .dailyPrice(d.getDailyPrice())
+                .startDateTime(d.getStartDateTime())
+                .createdAt(d.getCreatedAt())
+                .returnDate(d.getReturnDate())
+                .terminatedAt(d.getTerminatedAt())
+                .terminationReason(d.getTerminationReason())
+                .status(d.getStatus())
+                .comment(d.getComment())
+                .clientId(d.getClient() != null ? d.getClient().getId() : null)
+                .client(d.getClient() != null ? toDtoForDetail(d.getClient()) : null)
+                .toolId(toolId != null ? toolId : (tool != null ? tool.getId() : null))
+                .tool(toolDto)
+                .build();
+    }
+
+    private ClientDto toDtoForDetail(Client c) {
+        // Маппим клиента БЕЗ документов, чтобы избежать бесконечной рекурсии и лишних
+        // данных
+        return ClientDto.builder()
+                .id(c.getId())
+                .fullName(c.getFullName())
+                .phone(c.getPhone())
+                .whatsappPhone(c.getWhatsappPhone())
+                .registrationAddress(toAddressDto(c.getRegistrationAddress()))
+                .livingAddress(toAddressDto(c.getLivingAddress()))
+                .objectAddress(c.getObjectAddress())
+                .email(c.getEmail())
+                .birthDate(c.getBirthDate())
+                .comment(c.getComment())
+                .passport(toPassportDto(c.getPassport()))
+                .tag(c.getTag() != null ? c.getTag().name() : null)
                 .build();
     }
 

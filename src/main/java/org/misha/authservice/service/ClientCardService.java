@@ -53,12 +53,12 @@ public class ClientCardService {
                 }
 
                 List<ActiveContractDto> active = client.getDocuments().stream()
-                                .filter(d -> d.getClosedAt() == null && d.getTerminatedAt() == null)
+                                .filter(d -> d.getReturnDate() == null && d.getTerminatedAt() == null)
                                 .map(this::toActiveContract)
                                 .toList();
 
                 List<ContractHistoryDto> history = client.getDocuments().stream()
-                                .filter(d -> d.getClosedAt() != null || d.getTerminatedAt() != null)
+                                .filter(d -> d.getReturnDate() != null || d.getTerminatedAt() != null)
                                 .map(this::toHistory)
                                 .toList();
 
@@ -106,7 +106,7 @@ public class ClientCardService {
                                 .id(doc.getId())
                                 .contractNumber(doc.getContractNumber())
                                 .startDateTime(doc.getStartDateTime())
-                                .closedAt(doc.getClosedAt())
+                                .returnDate(doc.getReturnDate())
                                 .terminatedAt(doc.getTerminatedAt())
                                 .terminationReason(doc.getTerminationReason())
                                 .toolName(tool != null && tool.getTemplate() != null ? tool.getTemplate().getName()

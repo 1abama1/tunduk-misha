@@ -6,7 +6,6 @@ import org.misha.authservice.dto.ContractRequest;
 import org.misha.authservice.dto.ContractTableDto;
 import org.misha.authservice.dto.CreateContractRequest;
 import org.misha.authservice.dto.RentalDocumentDto;
-import org.misha.authservice.dto.TerminateContractRequest;
 import org.misha.authservice.dto.UpdateContractRequest;
 import org.misha.authservice.exception.AppException;
 import org.springframework.http.HttpStatus;
@@ -83,7 +82,6 @@ public class ContractService {
                 .client(client)
                 .contractNumber(contractNumber)
                 .startDateTime(startDateTime)
-                .expectedReturnDate(null)
                 .amount(null)
                 .dailyPrice(null)
                 .build();
@@ -92,7 +90,7 @@ public class ContractService {
 
         tool.setContract(doc);
         toolRepository.save(tool);
-        
+
         // Сохраняем toolId в документе
         doc.setToolId(tool.getId());
         documentRepository.save(doc);
@@ -101,28 +99,25 @@ public class ContractService {
         auditLogService.logCreate("Contract", doc.getId(), Map.of(
                 "contractNumber", doc.getContractNumber(),
                 "clientId", client.getId(),
-                "toolId", tool.getId()
-        ));
+                "toolId", tool.getId()));
 
         return toDto(doc);
     }
-    
+
     private RentalDocumentDto toDto(RentalDocument doc) {
         return new RentalDocumentDto(
                 doc.getId(),
                 doc.getContractNumber(),
                 doc.getStartDateTime(),
-                doc.getExpectedReturnDate(),
                 doc.getDailyPrice(),
                 doc.getAmount(),
                 doc.getCreatedAt(),
                 doc.getClient() != null ? doc.getClient().getId() : null,
-                doc.getClosedAt(),
+                doc.getReturnDate(),
                 doc.getTerminatedAt(),
                 doc.getTerminationReason(),
                 doc.getStatus(),
-                doc.getComment()
-        );
+                doc.getComment());
     }
 
     @Transactional
@@ -130,34 +125,32 @@ public class ContractService {
         RentalDocument doc = documentRepository.findById(contractId)
                 .orElseThrow(() -> new NotFoundException("Договор не найден"));
 
-        if (doc.getClosedAt() != null || doc.getTerminatedAt() != null) {
+        if (doc.getReturnDate() != null || doc.getTerminatedAt() != null) {
             throw new AppException(
                     "CONTRACT_ALREADY_CLOSED",
                     "Договор уже завершён",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         List<Tool> tools = toolRepository.findByContractId(contractId);
-        
+
         // Сохраняем toolId перед отвязкой инструментов
         if (!tools.isEmpty()) {
             doc.setToolId(tools.get(0).getId());
         }
-        
+
         for (Tool tool : tools) {
             tool.setContract(null);
             toolRepository.save(tool);
         }
 
-        doc.setClosedAt(LocalDateTime.now());
+        doc.setReturnDate(LocalDateTime.now());
         documentRepository.save(doc);
 
         // Audit logging
         auditLogService.logContractClose(contractId, Map.of(
                 "contractNumber", doc.getContractNumber(),
-                "toolsCount", tools.size()
-        ));
+                "toolsCount", tools.size()));
     }
 
     @Transactional
@@ -166,15 +159,13 @@ public class ContractService {
                 .orElseThrow(() -> new AppException(
                         "CONTRACT_NOT_FOUND",
                         "Договор не найден",
-                        HttpStatus.NOT_FOUND
-                ));
+                        HttpStatus.NOT_FOUND));
 
-        if (doc.getClosedAt() != null || doc.getTerminatedAt() != null) {
+        if (doc.getReturnDate() != null || doc.getTerminatedAt() != null) {
             throw new AppException(
                     "CONTRACT_CLOSED",
                     "Нельзя редактировать закрытый договор",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         if (req.comment() != null) {
@@ -185,7 +176,8 @@ public class ContractService {
 
         // Audit logging
         Map<String, Object> changes = new java.util.HashMap<>();
-        if (req.comment() != null) changes.put("comment", "updated");
+        if (req.comment() != null)
+            changes.put("comment", "updated");
         auditLogService.logUpdate("Contract", id, changes);
 
         return toDto(doc);
@@ -197,25 +189,23 @@ public class ContractService {
                 .orElseThrow(() -> new AppException(
                         "CONTRACT_NOT_FOUND",
                         "Договор не найден",
-                        HttpStatus.NOT_FOUND
-                ));
+                        HttpStatus.NOT_FOUND));
 
-        if (doc.getClosedAt() != null || doc.getTerminatedAt() != null) {
+        if (doc.getReturnDate() != null || doc.getTerminatedAt() != null) {
             throw new AppException(
                     "CONTRACT_ALREADY_CLOSED",
                     "Договор уже завершён",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // освобождаем инструменты
         List<Tool> tools = toolRepository.findByContractId(contractId);
-        
+
         // Сохраняем toolId перед отвязкой инструментов
         if (!tools.isEmpty()) {
             doc.setToolId(tools.get(0).getId());
         }
-        
+
         for (Tool tool : tools) {
             tool.setContract(null);
             toolRepository.save(tool);
@@ -232,8 +222,7 @@ public class ContractService {
         // Audit logging
         auditLogService.logContractTerminate(contractId, terminationReason, Map.of(
                 "contractNumber", doc.getContractNumber(),
-                "toolsCount", tools.size()
-        ));
+                "toolsCount", tools.size()));
     }
 
     /**
@@ -246,25 +235,22 @@ public class ContractService {
                 .orElseThrow(() -> new AppException(
                         "CONTRACT_NOT_FOUND",
                         "Договор не найден",
-                        HttpStatus.NOT_FOUND
-                ));
+                        HttpStatus.NOT_FOUND));
 
         // Нельзя восстановить расторгнутый договор
         if (doc.getTerminatedAt() != null) {
             throw new AppException(
                     "CONTRACT_TERMINATED",
                     "Расторгнутый договор нельзя восстановить",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
-        // Если договор уже активен (нет closedAt), восстанавливать нечего
-        if (doc.getClosedAt() == null) {
+        // Если договор уже активен (нет returnDate), восстанавливать нечего
+        if (doc.getReturnDate() == null) {
             throw new AppException(
                     "CONTRACT_ALREADY_ACTIVE",
                     "Договор уже активен",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // Для восстановления должен быть сохранён toolId
@@ -272,24 +258,21 @@ public class ContractService {
             throw new AppException(
                     "TOOL_ID_MISSING",
                     "Невозможно восстановить договор — не найден инструмент",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         Tool tool = toolRepository.findById(doc.getToolId())
                 .orElseThrow(() -> new AppException(
                         "TOOL_NOT_FOUND",
                         "Инструмент не найден",
-                        HttpStatus.NOT_FOUND
-                ));
+                        HttpStatus.NOT_FOUND));
 
         // Инструмент не должен быть уже привязан к другому договору
         if (tool.getContract() != null && !Objects.equals(tool.getContract().getId(), doc.getId())) {
             throw new AppException(
                     "TOOL_BUSY",
                     "Инструмент уже используется в другом договоре",
-                    HttpStatus.CONFLICT
-            );
+                    HttpStatus.CONFLICT);
         }
 
         // Возвращаем связь инструмент ↔ договор
@@ -297,7 +280,7 @@ public class ContractService {
         toolRepository.save(tool);
 
         // Сбрасываем закрытие
-        doc.setClosedAt(null);
+        doc.setReturnDate(null);
         doc.setTerminatedAt(null);
         doc.setTerminationReason(null);
         documentRepository.save(doc);
@@ -305,8 +288,7 @@ public class ContractService {
         // Audit logging
         auditLogService.logUpdate("Contract", contractId, Map.of(
                 "action", "RESTORE",
-                "toolId", tool.getId()
-        ));
+                "toolId", tool.getId()));
     }
 
     @Transactional
@@ -333,8 +315,7 @@ public class ContractService {
                 .orElseThrow(() -> new AppException(
                         "CONTRACT_NOT_FOUND",
                         "Договор не найден",
-                        HttpStatus.NOT_FOUND
-                ));
+                        HttpStatus.NOT_FOUND));
 
         // Загружаем клиента с паспортом
         Client client = document.getClient();
@@ -342,10 +323,9 @@ public class ContractService {
             throw new AppException(
                     "CLIENT_NOT_FOUND",
                     "Клиент не найден для договора",
-                    HttpStatus.NOT_FOUND
-            );
+                    HttpStatus.NOT_FOUND);
         }
-        
+
         // Загружаем клиента с паспортом, если он еще не загружен
         if (client.getPassport() == null) {
             client = clientRepository.findByIdWithDocuments(client.getId())
@@ -358,7 +338,7 @@ public class ContractService {
             tool = toolRepository.findByIdWithTemplateAndContract(document.getToolId())
                     .orElse(null);
         }
-        
+
         // Если не нашли по toolId, пробуем найти по contractId
         if (tool == null) {
             List<Tool> tools = toolRepository.findByContractIdWithTemplate(contractId);
@@ -387,14 +367,14 @@ public class ContractService {
                 .orElseThrow(() -> new AppException(
                         "CONTRACT_NOT_FOUND",
                         "Договор не найден",
-                        HttpStatus.NOT_FOUND
-                ));
+                        HttpStatus.NOT_FOUND));
         return toDto(doc);
     }
 
     /**
      * Получает список активных договоров в формате таблицы.
-     * Возвращает все активные (не закрытые и не расторгнутые) договоры с данными клиента и инструмента.
+     * Возвращает все активные (не закрытые и не расторгнутые) договоры с данными
+     * клиента и инструмента.
      */
     @Transactional(readOnly = true)
     public List<ActiveContractRowDto> getActiveContractsTable() {
@@ -408,7 +388,7 @@ public class ContractService {
 
             // Получаем инструменты с template (JOIN FETCH)
             List<Tool> tools = toolRepository.findByContractIdWithTemplate(c.getId());
-            
+
             // Формируем имя инструмента
             String toolName;
             if (tools.isEmpty()) {
@@ -458,15 +438,17 @@ public class ContractService {
     }
 
     /**
-     * История договоров (ACTIVE, CLOSED, TERMINATED) с сортировкой по startDateTime DESC.
-     * Фильтры: clientId, toolId, from, to, status (статус фильтруем в сервисе, так как он вычисляемый).
+     * История договоров (ACTIVE, CLOSED, TERMINATED) с сортировкой по startDateTime
+     * DESC.
+     * Фильтры: clientId, toolId, from, to, status (статус фильтруем в сервисе, так
+     * как он вычисляемый).
      */
     @Transactional(readOnly = true)
     public List<ContractTableDto> getHistoryTable(Long clientId,
-                                                  Long toolId,
-                                                  LocalDate from,
-                                                  LocalDate to,
-                                                  ContractStatus status) {
+            Long toolId,
+            LocalDate from,
+            LocalDate to,
+            ContractStatus status) {
         LocalDateTime fromDate = from != null ? from.atStartOfDay() : null;
         LocalDateTime toDate = to != null ? to.plusDays(1).atStartOfDay() : null;
 
@@ -515,8 +497,8 @@ public class ContractService {
             serialNumber = tool.getSerialNumber();
         }
 
-        LocalDateTime actualReturn = doc.getClosedAt() != null
-                ? doc.getClosedAt()
+        LocalDateTime actualReturn = doc.getReturnDate() != null
+                ? doc.getReturnDate()
                 : doc.getTerminatedAt();
 
         return ContractTableDto.builder()
@@ -526,12 +508,9 @@ public class ContractService {
                 .toolName(toolName)
                 .serialNumber(serialNumber)
                 .startDateTime(doc.getStartDateTime())
-                .expectedReturnDate(doc.getExpectedReturnDate())
-                .actualReturnDate(actualReturn)
+                .returnDate(actualReturn)
                 .amount(doc.getAmount())
                 .status(derivedStatus)
                 .build();
     }
 }
-
-

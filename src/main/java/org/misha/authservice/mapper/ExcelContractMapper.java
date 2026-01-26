@@ -13,7 +13,6 @@ import org.misha.authservice.entity.Tool;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -170,10 +169,18 @@ public class ExcelContractMapper {
         }
 
         // PIN и год рождения
-        String pin = client.getPin() != null ? client.getPin() : "";
-        Integer birthYear = client.getBirthYear();
-        if (birthYear == null && client.getBirthDate() != null) {
-            birthYear = client.getBirthDate().getYear();
+        String pin = client.getPin();
+        if (pin == null || pin.isBlank()) {
+            if (client.getPassport() != null) {
+                pin = client.getPassport().getInn();
+            }
+        }
+        if (pin == null)
+            pin = "";
+
+        String birthDate = "";
+        if (client.getBirthDate() != null) {
+            birthDate = client.getBirthDate().format(DATE_FORMATTER);
         }
 
         return new ClientExcelDto(
@@ -189,7 +196,7 @@ public class ExcelContractMapper {
                 livingAddress,
                 client.getObjectAddress() != null ? client.getObjectAddress() : "",
                 pin,
-                birthYear);
+                birthDate);
     }
 
     /**
@@ -210,10 +217,10 @@ public class ExcelContractMapper {
         String actualReturnDate = null;
         String actualReturnTime = null;
 
-        if (document.getClosedAt() != null) {
-            LocalDateTime closedAt = document.getClosedAt();
-            actualReturnDate = closedAt.toLocalDate().format(DATE_FORMATTER);
-            actualReturnTime = closedAt.toLocalTime().format(TIME_FORMATTER);
+        if (document.getReturnDate() != null) {
+            LocalDateTime returnDate = document.getReturnDate();
+            actualReturnDate = returnDate.toLocalDate().format(DATE_FORMATTER);
+            actualReturnTime = returnDate.toLocalTime().format(TIME_FORMATTER);
         } else if (document.getTerminatedAt() != null) {
             LocalDateTime terminatedAt = document.getTerminatedAt();
             actualReturnDate = terminatedAt.toLocalDate().format(DATE_FORMATTER);

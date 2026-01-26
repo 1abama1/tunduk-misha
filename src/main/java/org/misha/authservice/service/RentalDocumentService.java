@@ -3,10 +3,8 @@ package org.misha.authservice.service;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.CreateDocumentRequest;
 import org.misha.authservice.dto.UpdateDocumentRequest;
-import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.RentalDocument;
 import org.misha.authservice.entity.Tool;
-import org.misha.authservice.entity.ToolCategory;
 import org.misha.authservice.exception.AppException;
 import org.misha.authservice.repository.ClientRepository;
 import org.misha.authservice.repository.RentalDocumentRepository;
@@ -62,18 +60,21 @@ public class RentalDocumentService {
 
             Long templateId = tool.getTemplate().getId();
             if (!availabilityService.isAvailable(templateId)) {
-                throw new AppException("TOOL_NOT_AVAILABLE", "Инструменты данного типа закончились", HttpStatus.BAD_REQUEST);
+                throw new AppException("TOOL_NOT_AVAILABLE", "Инструменты данного типа закончились",
+                        HttpStatus.BAD_REQUEST);
             }
 
             // Если передан categoryId, проверяем соответствие
             if (req.getCategoryId() != null) {
                 var category = categoryRepository.findById(req.getCategoryId())
-                        .orElseThrow(() -> new AppException("CATEGORY_NOT_FOUND", "Category not found", HttpStatus.NOT_FOUND));
+                        .orElseThrow(() -> new AppException("CATEGORY_NOT_FOUND", "Category not found",
+                                HttpStatus.NOT_FOUND));
 
                 // Проверяем что инструмент подходит под категорию
                 if (tool.getTemplate() == null || tool.getTemplate().getCategory() == null ||
                         !tool.getTemplate().getCategory().getId().equals(category.getId())) {
-                    throw new AppException("TOOL_CATEGORY_MISMATCH", "Tool does not belong to selected category", HttpStatus.BAD_REQUEST);
+                    throw new AppException("TOOL_CATEGORY_MISMATCH", "Tool does not belong to selected category",
+                            HttpStatus.BAD_REQUEST);
                 }
             }
 
@@ -83,7 +84,7 @@ public class RentalDocumentService {
             // Привязываем инструмент к документу
             tool.setContract(doc);
             toolRepository.save(tool);
-            
+
             // Сохраняем toolId в документе
             doc.setToolId(tool.getId());
             documentRepository.save(doc);
@@ -120,9 +121,6 @@ public class RentalDocumentService {
         if (req.getStartDateTime() != null)
             doc.setStartDateTime(req.getStartDateTime());
 
-        if (req.getExpectedReturnDate() != null)
-            doc.setExpectedReturnDate(req.getExpectedReturnDate());
-
         if (req.getAmount() != null)
             doc.setAmount(req.getAmount());
 
@@ -132,7 +130,8 @@ public class RentalDocumentService {
                     .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "Tool not found", HttpStatus.NOT_FOUND));
 
             if (newTool.getContract() != null && !newTool.getContract().getId().equals(doc.getId()))
-                throw new AppException("TOOL_IN_OTHER_DOCUMENT", "Tool belongs to another document", HttpStatus.CONFLICT);
+                throw new AppException("TOOL_IN_OTHER_DOCUMENT", "Tool belongs to another document",
+                        HttpStatus.CONFLICT);
 
             // убрать старые инструменты
             if (doc.getTools() != null) {
@@ -145,13 +144,13 @@ public class RentalDocumentService {
             // привязать новый
             newTool.setContract(doc);
             toolRepository.save(newTool);
-            
+
             // Сохраняем toolId в документе
             doc.setToolId(newTool.getId());
         }
 
         documentRepository.save(doc);
-        
+
         // Перезагружаем документ с инструментами
         return documentRepository.findByIdWithTools(doc.getId())
                 .orElse(doc);
@@ -163,19 +162,18 @@ public class RentalDocumentService {
         RentalDocument doc = documentRepository.findByIdWithTools(docId)
                 .orElseThrow(() -> new AppException("DOCUMENT_NOT_FOUND", "Document not found", HttpStatus.NOT_FOUND));
 
-        if (doc.getClosedAt() != null || doc.getTerminatedAt() != null) {
+        if (doc.getReturnDate() != null || doc.getTerminatedAt() != null) {
             throw new AppException(
                     "CONTRACT_ALREADY_CLOSED",
                     "Договор уже завершён",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
 
         // Сохраняем toolId перед отвязкой инструментов
         if (doc.getTools() != null && !doc.getTools().isEmpty()) {
             Tool firstTool = doc.getTools().get(0);
             doc.setToolId(firstTool.getId());
-            
+
             // Отвязать все инструменты от документа
             doc.getTools().forEach(tool -> {
                 tool.setContract(null);
@@ -184,7 +182,7 @@ public class RentalDocumentService {
         }
 
         // Установить дату закрытия договора
-        doc.setClosedAt(LocalDateTime.now());
+        doc.setReturnDate(LocalDateTime.now());
         documentRepository.save(doc);
 
         // Перезагружаем документ с инструментами

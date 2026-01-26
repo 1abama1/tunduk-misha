@@ -6,7 +6,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.misha.authservice.dto.excel.ExcelContractDto;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -41,11 +41,14 @@ public class ExcelGeneratorService {
     public byte[] generateContractExcel(ExcelContractDto dto) {
         try (
                 InputStream is = new ClassPathResource(TEMPLATE_PATH).getInputStream();
-                Workbook workbook = new XSSFWorkbook(is);
+                Workbook workbook = WorkbookFactory.create(is);
                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             fillContractSheet(workbook, dto);
             fillToolPriceSheet(workbook, dto);
             fillActSheet(workbook, dto);
+
+            // Заставляем Excel пересчитать формулы и обновить связи при открытии
+            workbook.setForceFormulaRecalculation(true);
 
             workbook.write(out);
             return out.toByteArray();
@@ -96,8 +99,8 @@ public class ExcelGeneratorService {
             set(sheet, "I21", dto.client().livingAddress().street());
         }
         set(sheet, "C22", dto.client().pin());
-        if (dto.client().birthYear() != null) {
-            set(sheet, "A23", dto.client().birthYear().toString());
+        if (dto.client().birthDate() != null) {
+            set(sheet, "A23", dto.client().birthDate());
         }
 
         // K22 — Адрес объекта
@@ -179,7 +182,7 @@ public class ExcelGeneratorService {
      */
     private void clear(Sheet sheet, String cellRef) {
         Cell cell = getCell(sheet, cellRef);
-        cell.setBlank();
+        cell.setCellValue(""); // Используем пустую строку вместо setBlank, чтобы сохранить стили и валидацию
     }
 
     /**

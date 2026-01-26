@@ -14,7 +14,8 @@ import java.util.Map;
 
 /**
  * Контроллер для управления арендой инструментов.
- * Реализует правильную архитектуру: аренда происходит на уровне конкретного экземпляра (Tool).
+ * Реализует правильную архитектуру: аренда происходит на уровне конкретного
+ * экземпляра (Tool).
  */
 @RestController
 @RequestMapping("/api/rent")
@@ -25,14 +26,15 @@ public class RentalController {
 
     /**
      * Аренда инструмента.
-     * Создает договор аренды и привязывает конкретный экземпляр инструмента к договору.
+     * Создает договор аренды и привязывает конкретный экземпляр инструмента к
+     * договору.
      *
      * POST /api/rent
      * Body: {
-     *   "toolId": 123,
-     *   "clientId": 88,
-     *   "rentDays": 3,
-     *   "pricePerDay": 2000
+     * "toolId": 123,
+     * "clientId": 88,
+     * "rentDays": 3,
+     * "pricePerDay": 2000
      * }
      */
     @PostMapping
@@ -47,7 +49,7 @@ public class RentalController {
      *
      * POST /api/rent/return
      * Body: {
-     *   "contractId": 123
+     * "contractId": 123
      * }
      */
     @PostMapping("/return")
@@ -56,8 +58,7 @@ public class RentalController {
         return ResponseEntity.ok(Map.of(
                 "status", "returned",
                 "contractId", req.contractId(),
-                "message", "Tool returned successfully"
-        ));
+                "message", "Tool returned successfully"));
     }
 
     /**
@@ -68,17 +69,14 @@ public class RentalController {
                 doc.getId(),
                 doc.getContractNumber(),
                 doc.getStartDateTime(),
-                doc.getExpectedReturnDate(),
                 doc.getDailyPrice(),
                 doc.getAmount(),
                 doc.getCreatedAt(),
                 doc.getClient() != null ? doc.getClient().getId() : null,
-                doc.getClosedAt(),
+                doc.getReturnDate(),
                 doc.getTerminatedAt(),
                 doc.getTerminationReason(),
                 doc.getStatus(),
-                doc.getComment()
-        );
+                doc.getComment());
     }
 }
-

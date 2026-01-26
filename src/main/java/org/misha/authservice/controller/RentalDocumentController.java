@@ -2,6 +2,7 @@ package org.misha.authservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.CreateDocumentRequest;
+import org.misha.authservice.dto.DocumentDetailDto;
 import org.misha.authservice.dto.DocumentDto;
 import org.misha.authservice.dto.UpdateDocumentRequest;
 import org.misha.authservice.entity.RentalDocument;
@@ -34,28 +35,27 @@ public class RentalDocumentController {
         return ResponseEntity.ok(
                 service.findAll().stream()
                         .map(clientMapper::toDocDto)
-                        .toList()
-        );
+                        .toList());
     }
 
     // READ ONE
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentDto> getOne(@PathVariable Long id) {
-        return ResponseEntity.ok(clientMapper.toDocDto(service.findOne(id)));
+    public ResponseEntity<DocumentDetailDto> getOne(@PathVariable Long id) {
+        return ResponseEntity.ok(clientMapper.toDetailDto(service.findOne(id)));
     }
 
     // UPDATE
     @PutMapping("/{id}")
     public ResponseEntity<DocumentDto> update(@PathVariable Long id,
-                                              @RequestBody UpdateDocumentRequest req) {
+            @RequestBody UpdateDocumentRequest req) {
         return ResponseEntity.ok(clientMapper.toDocDto(service.update(id, req)));
     }
 
     // CLOSE (возврат инструмента)
     @PostMapping("/{id}/close")
-    public ResponseEntity<DocumentDto> close(@PathVariable Long id) {
+    public ResponseEntity<DocumentDetailDto> close(@PathVariable Long id) {
         RentalDocument doc = service.close(id);
-        return ResponseEntity.ok(clientMapper.toDocDto(doc));
+        return ResponseEntity.ok(clientMapper.toDetailDto(doc));
     }
 
     // DELETE

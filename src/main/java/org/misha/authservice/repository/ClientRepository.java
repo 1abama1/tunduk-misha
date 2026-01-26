@@ -35,7 +35,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
                 c.email,
                 CASE WHEN EXISTS (
                     SELECT 1 FROM RentalDocument d
-                    WHERE d.client.id = c.id AND d.closedAt IS NULL AND d.terminatedAt IS NULL
+                    WHERE d.client.id = c.id AND d.returnDate IS NULL AND d.terminatedAt IS NULL
                 )
                 THEN true ELSE false END
             )
@@ -59,11 +59,11 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
                 OR LOWER(c.livingAddress) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(c.email) LIKE LOWER(CONCAT('%', :query, '%')))
             AND (:tag IS NULL OR c.tag = :tag)
-            AND (:hasDocuments IS NULL 
+            AND (:hasDocuments IS NULL
                 OR (:hasDocuments = true AND EXISTS (SELECT 1 FROM RentalDocument rd WHERE rd.client.id = c.id))
                 OR (:hasDocuments = false AND NOT EXISTS (SELECT 1 FROM RentalDocument rd WHERE rd.client.id = c.id)))
             AND (:contractNumber IS NULL OR :contractNumber = ''
-                OR EXISTS (SELECT 1 FROM RentalDocument rd WHERE rd.client.id = c.id 
+                OR EXISTS (SELECT 1 FROM RentalDocument rd WHERE rd.client.id = c.id
                     AND LOWER(rd.contractNumber) LIKE LOWER(CONCAT('%', :contractNumber, '%'))))
             AND (:minDocs IS NULL OR (SELECT COUNT(rd) FROM RentalDocument rd WHERE rd.client.id = c.id) >= :minDocs)
             AND (:maxDocs IS NULL OR (SELECT COUNT(rd) FROM RentalDocument rd WHERE rd.client.id = c.id) <= :maxDocs)
@@ -74,7 +74,5 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
             @Param("hasDocuments") Boolean hasDocuments,
             @Param("contractNumber") String contractNumber,
             @Param("minDocs") Integer minDocs,
-            @Param("maxDocs") Integer maxDocs
-    );
+            @Param("maxDocs") Integer maxDocs);
 }
-

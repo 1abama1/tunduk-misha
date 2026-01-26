@@ -7,8 +7,6 @@ import org.misha.authservice.exception.AppException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
-
 /**
  * Единая точка проверки статуса аренды инструментов.
  * Устраняет дублирование проверок tool.getContract() != null по всему коду.
@@ -29,8 +27,7 @@ public class ToolRentalGuard {
             throw new AppException(
                     "TOOL_IS_RENTED",
                     "Инструмент находится в аренде",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -38,7 +35,7 @@ public class ToolRentalGuard {
      * Проверяет, что инструмент не находится в аренде.
      * Выбрасывает исключение с кастомным сообщением.
      *
-     * @param tool инструмент для проверки
+     * @param tool    инструмент для проверки
      * @param message кастомное сообщение об ошибке
      * @throws AppException если инструмент в аренде
      */
@@ -47,8 +44,7 @@ public class ToolRentalGuard {
             throw new AppException(
                     "TOOL_IS_RENTED",
                     message,
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -64,8 +60,7 @@ public class ToolRentalGuard {
             throw new AppException(
                     "TOOL_ALREADY_RENTED",
                     "Инструмент уже арендован",
-                    HttpStatus.CONFLICT
-            );
+                    HttpStatus.CONFLICT);
         }
     }
 
@@ -81,8 +76,7 @@ public class ToolRentalGuard {
             throw new AppException(
                     "CANNOT_DELETE_RENTED_TOOL",
                     "Нельзя удалить инструмент, который находится в аренде",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -98,8 +92,7 @@ public class ToolRentalGuard {
             throw new AppException(
                     "TOOL_IS_RENTED",
                     "Нельзя изменить статус инструмента в аренде",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -116,8 +109,7 @@ public class ToolRentalGuard {
             throw new AppException(
                     "TOOL_IN_USE",
                     "Нельзя редактировать инструмент в аренде",
-                    HttpStatus.BAD_REQUEST
-            );
+                    HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -132,7 +124,7 @@ public class ToolRentalGuard {
             return false;
         }
         // Договор считается активным, если он не закрыт и не расторгнут
-        return tool.getContract().getClosedAt() == null 
+        return tool.getContract().getReturnDate() == null
                 && tool.getContract().getTerminatedAt() == null;
     }
 
@@ -151,12 +143,6 @@ public class ToolRentalGuard {
             return ToolStatus.AVAILABLE;
         }
 
-        if (tool.getContract().getExpectedReturnDate() != null &&
-            tool.getContract().getExpectedReturnDate().isBefore(LocalDate.now())) {
-            return ToolStatus.OVERDUE;
-        }
-
         return ToolStatus.RENTED;
     }
 }
-

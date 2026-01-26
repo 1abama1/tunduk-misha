@@ -17,9 +17,8 @@ public class ContractHistoryDto {
     private String contractNumber;
     private String toolName;
     private LocalDateTime startDateTime;
-    private LocalDateTime closedAt;
+    private LocalDateTime returnDate;
     private LocalDateTime terminatedAt;
     private String terminationReason;
     private ContractStatus status;
 }
-
