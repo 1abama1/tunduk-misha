@@ -113,6 +113,8 @@ public class ToolRentalGuard {
         }
     }
 
+    private final org.misha.authservice.repository.RentalDocumentRepository documentRepository;
+
     /**
      * Проверяет, находится ли инструмент в аренде.
      *
@@ -120,12 +122,19 @@ public class ToolRentalGuard {
      * @return true, если инструмент в аренде (есть активный договор)
      */
     public boolean isRented(Tool tool) {
-        if (tool.getContract() == null) {
-            return false;
+        // 1. Проверка через прямую связь в объекте Tool (самый быстрый способ)
+        if (tool.getContract() != null) {
+            // Договор считается активным, если он не закрыт и не расторгнут
+            if (tool.getContract().getReturnDate() == null
+                    && tool.getContract().getTerminatedAt() == null) {
+                return true;
+            }
         }
-        // Договор считается активным, если он не закрыт и не расторгнут
-        return tool.getContract().getReturnDate() == null
-                && tool.getContract().getTerminatedAt() == null;
+
+        // 2. Проверка по таблице документов (на случай, если связь в таблице tools была
+        // затерта
+        // или инструмент еще не привязан, но договор уже создан в этой транзакции)
+        return documentRepository.existsByToolIdAndReturnDateIsNullAndTerminatedAtIsNull(tool.getId());
     }
 
     /**

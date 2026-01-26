@@ -3,10 +3,10 @@ package org.misha.authservice.controller;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.ActiveContractRowDto;
 import org.misha.authservice.dto.AvailableToolDto;
+import org.misha.authservice.dto.CloseContractRequest;
 import org.misha.authservice.dto.ContractRequest;
 import org.misha.authservice.dto.CreateContractRequest;
 import org.misha.authservice.dto.RentalDocumentDto;
-import org.misha.authservice.dto.TerminateContractRequest;
 import org.misha.authservice.dto.UpdateContractRequest;
 import org.misha.authservice.entity.ToolTemplate;
 import org.misha.authservice.exception.BadRequestException;
@@ -62,25 +62,11 @@ public class ContractController {
     }
 
     @PostMapping("/{id}/close")
-
-    public ResponseEntity<?> close(@PathVariable Long id) {
-        contractService.closeContract(id);
+    public ResponseEntity<?> close(@PathVariable Long id, @RequestBody(required = false) CloseContractRequest req) {
+        contractService.closeContract(id, req);
         return ResponseEntity.ok(Map.of(
                 "status", "closed",
-                "contractId", id
-        ));
-    }
-
-    @PostMapping("/{id}/terminate")
-    public ResponseEntity<?> terminate(
-            @PathVariable Long id,
-            @RequestBody TerminateContractRequest req
-    ) {
-        contractService.terminateContract(id, req.reason());
-        return ResponseEntity.ok(Map.of(
-                "status", "terminated",
-                "contractId", id
-        ));
+                "contractId", id));
     }
 
     @PostMapping("/{id}/restore")
@@ -88,26 +74,26 @@ public class ContractController {
         contractService.restoreContract(id);
         return ResponseEntity.ok(Map.of(
                 "status", "restored",
-                "contractId", id
-        ));
+                "contractId", id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<RentalDocumentDto> updateContract(
             @PathVariable Long id,
-            @RequestBody UpdateContractRequest req
-    ) {
+            @RequestBody UpdateContractRequest req) {
         return ResponseEntity.ok(contractService.update(id, req));
     }
 
     /**
      * Генерирует Excel файл договора по ID договора.
-     * Использует новый ExcelGeneratorService с точным маппингом ячеек по инструкции.
+     * Использует новый ExcelGeneratorService с точным маппингом ячеек по
+     * инструкции.
      * 
      * @param id ID договора
      * @return Excel файл
      */
-    @GetMapping(value = {"/{id}/excel", "/{id}/excel/"}, produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @GetMapping(value = { "/{id}/excel",
+            "/{id}/excel/" }, produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     public ResponseEntity<byte[]> generateExcelContractById(@PathVariable Long id) {
         try {
             byte[] file = contractService.generateContractExcelById(id);

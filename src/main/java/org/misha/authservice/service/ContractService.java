@@ -2,6 +2,7 @@ package org.misha.authservice.service;
 
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.ActiveContractRowDto;
+import org.misha.authservice.dto.CloseContractRequest;
 import org.misha.authservice.dto.ContractRequest;
 import org.misha.authservice.dto.ContractTableDto;
 import org.misha.authservice.dto.CreateContractRequest;
@@ -121,7 +122,7 @@ public class ContractService {
     }
 
     @Transactional
-    public void closeContract(Long contractId) {
+    public void closeContract(Long contractId, CloseContractRequest req) {
         RentalDocument doc = documentRepository.findById(contractId)
                 .orElseThrow(() -> new NotFoundException("Договор не найден"));
 
@@ -145,12 +146,22 @@ public class ContractService {
         }
 
         doc.setReturnDate(LocalDateTime.now());
+        if (req != null) {
+            if (req.paidAmount() != null) {
+                doc.setAmount(req.paidAmount());
+            }
+            if (req.comment() != null) {
+                doc.setComment(req.comment());
+            }
+        }
+
         documentRepository.save(doc);
 
         // Audit logging
         auditLogService.logContractClose(contractId, Map.of(
                 "contractNumber", doc.getContractNumber(),
-                "toolsCount", tools.size()));
+                "toolsCount", tools.size(),
+                "paidAmount", req != null ? req.paidAmount() : "N/A"));
     }
 
     @Transactional
@@ -181,48 +192,6 @@ public class ContractService {
         auditLogService.logUpdate("Contract", id, changes);
 
         return toDto(doc);
-    }
-
-    @Transactional
-    public void terminateContract(Long contractId, String reason) {
-        RentalDocument doc = documentRepository.findById(contractId)
-                .orElseThrow(() -> new AppException(
-                        "CONTRACT_NOT_FOUND",
-                        "Договор не найден",
-                        HttpStatus.NOT_FOUND));
-
-        if (doc.getReturnDate() != null || doc.getTerminatedAt() != null) {
-            throw new AppException(
-                    "CONTRACT_ALREADY_CLOSED",
-                    "Договор уже завершён",
-                    HttpStatus.BAD_REQUEST);
-        }
-
-        // освобождаем инструменты
-        List<Tool> tools = toolRepository.findByContractId(contractId);
-
-        // Сохраняем toolId перед отвязкой инструментов
-        if (!tools.isEmpty()) {
-            doc.setToolId(tools.get(0).getId());
-        }
-
-        for (Tool tool : tools) {
-            tool.setContract(null);
-            toolRepository.save(tool);
-        }
-
-        doc.setTerminatedAt(LocalDateTime.now());
-        String terminationReason = reason != null && !reason.isBlank()
-                ? reason
-                : "Расторгнут без указания причины";
-        doc.setTerminationReason(terminationReason);
-
-        documentRepository.save(doc);
-
-        // Audit logging
-        auditLogService.logContractTerminate(contractId, terminationReason, Map.of(
-                "contractNumber", doc.getContractNumber(),
-                "toolsCount", tools.size()));
     }
 
     /**
@@ -390,32 +359,22 @@ public class ContractService {
             List<Tool> tools = toolRepository.findByContractIdWithTemplate(c.getId());
 
             // Формируем имя инструмента
-            String toolName;
-            if (tools.isEmpty()) {
-                toolName = "—";
-            } else if (tools.size() == 1) {
-                Tool tool = tools.get(0);
-                // Используем tool.getName() если есть, иначе template.getName()
-                if (tool.getName() != null && !tool.getName().isBlank()) {
-                    toolName = tool.getName();
-                } else if (tool.getTemplate() != null && tool.getTemplate().getName() != null) {
-                    toolName = tool.getTemplate().getName();
+            String toolName = "—";
+            if (!tools.isEmpty()) {
+                if (tools.size() == 1) {
+                    Tool tool = tools.get(0);
+                    toolName = getDisplayName(tool);
                 } else {
-                    toolName = "—";
+                    toolName = tools.stream()
+                            .map(this::getDisplayName)
+                            .reduce((a, b) -> a + ", " + b)
+                            .orElse("—");
                 }
-            } else {
-                // Если несколько инструментов, объединяем их имена
-                toolName = tools.stream()
-                        .map(t -> {
-                            if (t.getName() != null && !t.getName().isBlank()) {
-                                return t.getName();
-                            } else if (t.getTemplate() != null && t.getTemplate().getName() != null) {
-                                return t.getTemplate().getName();
-                            } else {
-                                return "—";
-                            }
-                        })
-                        .reduce((a, b) -> a + ", " + b)
+            } else if (c.getToolId() != null) {
+                // Если связи в таблице tools нет (инструмент перепривязан),
+                // пробуем найти инструмент по сохраненному в документе toolId
+                toolName = toolRepository.findByIdWithTemplateAndContract(c.getToolId())
+                        .map(this::getDisplayName)
                         .orElse("—");
             }
 
@@ -435,6 +394,16 @@ public class ContractService {
                     .balance(balance)
                     .build();
         }).toList();
+    }
+
+    private String getDisplayName(Tool tool) {
+        if (tool.getName() != null && !tool.getName().isBlank()) {
+            return tool.getName();
+        } else if (tool.getTemplate() != null && tool.getTemplate().getName() != null) {
+            return tool.getTemplate().getName();
+        } else {
+            return "—";
+        }
     }
 
     /**

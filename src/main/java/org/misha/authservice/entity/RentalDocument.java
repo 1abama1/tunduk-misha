@@ -70,10 +70,7 @@ public class RentalDocument {
      * @return ACTIVE, CLOSED или TERMINATED
      */
     public ContractStatus getStatus() {
-        if (terminatedAt != null) {
-            return ContractStatus.TERMINATED;
-        }
-        if (returnDate != null) {
+        if (returnDate != null || terminatedAt != null) {
             return ContractStatus.CLOSED;
         }
         return ContractStatus.ACTIVE;
