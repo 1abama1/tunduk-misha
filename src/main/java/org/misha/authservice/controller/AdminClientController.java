@@ -1,5 +1,6 @@
 package org.misha.authservice.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.ClientDto;
 import org.misha.authservice.dto.ClientLightSearchDto;
@@ -8,8 +9,6 @@ import org.misha.authservice.dto.CreateClientRequest;
 import org.misha.authservice.dto.RentalDocumentDto;
 import org.misha.authservice.dto.UpdateClientRequest;
 import org.misha.authservice.entity.ClientImage;
-import org.misha.authservice.exception.AppException;
-import org.misha.authservice.repository.ClientImageRepository;
 import org.misha.authservice.service.AdminClientService;
 import org.misha.authservice.service.ClientCardService;
 import org.misha.authservice.service.ClientImageService;
@@ -33,7 +32,6 @@ public class AdminClientController {
     private final ClientService clientService;
     private final ClientCardService clientCardService;
     private final ClientImageService clientImageService;
-    private final ClientImageRepository clientImageRepository;
     private final ExcelClientImportService excelClientImportService;
 
     @GetMapping("/search")
@@ -62,7 +60,7 @@ public class AdminClientController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ClientDto> createClient(@RequestBody CreateClientRequest req) {
+    public ResponseEntity<ClientDto> createClient(@Valid @RequestBody CreateClientRequest req) {
         return ResponseEntity.ok(clientService.create(req));
     }
 
@@ -77,14 +75,16 @@ public class AdminClientController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ClientDto>> getAllClients() {
-        return ResponseEntity.ok(clientService.getAll());
+    public ResponseEntity<org.springframework.data.domain.Page<ClientDto>> getAllClients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(clientService.getAll(page, size));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ClientDto> updateClient(
             @PathVariable Long id,
-            @RequestBody UpdateClientRequest req
+            @Valid @RequestBody UpdateClientRequest req
     ) {
         return ResponseEntity.ok(clientService.update(id, req));
     }
@@ -132,9 +132,7 @@ public class AdminClientController {
 
     @GetMapping("/images/{imageId}")
     public ResponseEntity<byte[]> getImage(@PathVariable Long imageId) {
-        ClientImage image = clientImageRepository.findById(imageId)
-                .orElseThrow(() -> new AppException("IMAGE_NOT_FOUND", "Изображение не найдено",
-                        org.springframework.http.HttpStatus.NOT_FOUND));
+        ClientImage image = clientImageService.getImage(imageId);
 
         String contentType = image.getFileType();
         MediaType mediaType = contentType != null ? MediaType.parseMediaType(contentType) : MediaType.APPLICATION_OCTET_STREAM;
@@ -145,4 +143,3 @@ public class AdminClientController {
                 .body(image.getData());
     }
 }
-

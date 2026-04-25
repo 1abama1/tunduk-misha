@@ -1,5 +1,6 @@
 package org.misha.authservice.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.CreateTemplateRequest;
 import org.misha.authservice.dto.TemplateDto;
@@ -17,7 +18,7 @@ public class ToolTemplateController {
     private final ToolTemplateService service;
 
     @PostMapping
-    public TemplateDto create(@RequestBody CreateTemplateRequest request) {
+    public TemplateDto create(@Valid @RequestBody CreateTemplateRequest request) {
         return service.create(request);
     }
 

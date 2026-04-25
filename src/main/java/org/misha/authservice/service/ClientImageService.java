@@ -69,5 +69,11 @@ public class ClientImageService {
                 .orElseThrow(() -> new AppException("IMAGE_NOT_FOUND", "Изображение не найдено", HttpStatus.NOT_FOUND));
         imageRepository.delete(image);
     }
+
+    @Transactional(readOnly = true)
+    public ClientImage getImage(Long imageId) {
+        return imageRepository.findById(imageId)
+                .orElseThrow(() -> new AppException("IMAGE_NOT_FOUND", "Изображение не найдено", HttpStatus.NOT_FOUND));
+    }
 }
 

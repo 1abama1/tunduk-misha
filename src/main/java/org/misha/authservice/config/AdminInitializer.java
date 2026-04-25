@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.misha.authservice.entity.Role;
 import org.misha.authservice.entity.User;
 import org.misha.authservice.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -14,10 +15,12 @@ import org.springframework.stereotype.Component;
 public class AdminInitializer {
 
     private static final String ADMIN_EMAIL = "admin@admin.admin";
-        private static final String DEFAULT_PASSWORD = "admin123";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.admin.password}")
+    private String adminPassword;
 
     public void init() {
         if (userRepository.existsByEmail(ADMIN_EMAIL)) {
@@ -29,11 +32,10 @@ public class AdminInitializer {
                 .email(ADMIN_EMAIL)
                 .fullName("Administrator")
                 .role(Role.ADMIN)
-                .passwordHash(passwordEncoder.encode(DEFAULT_PASSWORD))
+                .passwordHash(passwordEncoder.encode(adminPassword))
                 .build();
 
         userRepository.save(admin);
-        log.info("Admin created (email={}, password={})", ADMIN_EMAIL, DEFAULT_PASSWORD);
+        log.info("Admin created (email={})", ADMIN_EMAIL);
     }
 }
-

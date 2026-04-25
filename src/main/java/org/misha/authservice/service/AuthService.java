@@ -8,6 +8,7 @@ import org.misha.authservice.exception.AppException;
 import org.misha.authservice.repository.RefreshTokenRepository;
 import org.misha.authservice.repository.UserRepository;
 import org.misha.authservice.security.JwtUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,9 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RefreshTokenRepository refreshTokenRepository;
+
+    @Value("${jwt.refresh.expiration}")
+    private long refreshExpirationMs;
 
     public User register(UserRegistrationDTO dto) {
         if ((dto.getEmail() == null || dto.getEmail().isBlank()) && (dto.getPhone() == null || dto.getPhone().isBlank())) {
@@ -56,7 +60,7 @@ public class AuthService {
         RefreshToken token = RefreshToken.builder()
                 .user(user)
                 .jti(jti)
-                .expiresAt(java.time.OffsetDateTime.now().plus(Duration.ofMillis(604800000L))) // align with properties
+                .expiresAt(java.time.OffsetDateTime.now().plus(Duration.ofMillis(refreshExpirationMs)))
                 .revoked(false)
                 .createdAt(java.time.OffsetDateTime.now())
                 .build();

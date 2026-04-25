@@ -3,6 +3,7 @@ package org.misha.authservice.service;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.CreateToolRequest;
 import org.misha.authservice.dto.ToolAttributeDto;
+import org.misha.authservice.dto.AvailableToolDto;
 import org.misha.authservice.dto.ToolDto;
 import org.misha.authservice.dto.ToolImageDto;
 import org.misha.authservice.dto.ToolListDto;
@@ -350,6 +351,17 @@ public class ToolService {
         return toolRepository.findByTemplateId(templateId)
                 .stream()
                 .map(this::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AvailableToolDto> getAvailableByTemplate(Long templateId) {
+        ToolTemplate template = templateRepository.findById(templateId)
+                .orElseThrow(() -> new AppException("TEMPLATE_NOT_FOUND", "Template not found", HttpStatus.NOT_FOUND));
+
+        return toolRepository.findByTemplateIdAndContractIsNull(templateId)
+                .stream()
+                .map(t -> new AvailableToolDto(t.getId(), template.getName(), t.getSerialNumber()))
                 .toList();
     }
 

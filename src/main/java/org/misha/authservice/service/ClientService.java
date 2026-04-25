@@ -17,6 +17,8 @@ import org.misha.authservice.mapper.ClientMapper;
 import org.misha.authservice.repository.ClientImageRepository;
 import org.misha.authservice.repository.ClientRepository;
 import org.misha.authservice.repository.RentalDocumentRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,34 +88,28 @@ public class ClientService {
     }
 
     @Transactional(readOnly = true)
-    public List<ClientDto> getAll() {
-        // First fetch clients with documents
-        List<Client> clients = clientRepository.findAllWithDocuments();
+    public Page<ClientDto> getAll(int page, int size) {
+        Page<Client> clientsPage = clientRepository.findAll(PageRequest.of(page, size));
 
-        // Then fetch tools for all documents to avoid MultipleBagFetchException
-        if (!clients.isEmpty()) {
-            List<Long> documentIds = clients.stream()
-                    .flatMap(client -> client.getDocuments().stream())
-                    .map(RentalDocument::getId)
-                    .toList();
-            if (!documentIds.isEmpty()) {
-                rentalDocumentRepository.findByIdsWithTools(documentIds);
-            }
+        List<Long> documentIds = clientsPage.getContent().stream()
+                .flatMap(client -> client.getDocuments().stream())
+                .map(RentalDocument::getId)
+                .toList();
+        if (!documentIds.isEmpty()) {
+            rentalDocumentRepository.findByIdsWithTools(documentIds);
         }
 
-        return clients.stream()
-                .map(client -> {
-                    ClientDto dto = clientMapper.toDto(client);
-                    dto.setImages(
-                            imageRepository.findByClientId(client.getId()).stream()
-                                    .map(img -> new ClientImageDto(
-                                            img.getId(),
-                                            img.getFileName(),
-                                            img.getFileType()))
-                                    .toList());
-                    return dto;
-                })
-                .toList();
+        return clientsPage.map(client -> {
+            ClientDto dto = clientMapper.toDto(client);
+            dto.setImages(
+                    imageRepository.findByClientId(client.getId()).stream()
+                            .map(img -> new ClientImageDto(
+                                    img.getId(),
+                                    img.getFileName(),
+                                    img.getFileType()))
+                            .toList());
+            return dto;
+        });
     }
 
     @Transactional

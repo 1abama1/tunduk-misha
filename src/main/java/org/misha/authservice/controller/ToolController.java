@@ -1,15 +1,11 @@
 package org.misha.authservice.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.*;
-import org.misha.authservice.entity.Tool;
-import org.misha.authservice.entity.ToolImage;
 import org.misha.authservice.entity.ToolStatus;
-import org.misha.authservice.entity.ToolTemplate;
-import org.misha.authservice.repository.ToolRepository;
-import org.misha.authservice.repository.ToolTemplateRepository;
-import org.misha.authservice.service.ToolHistoryService;
 import org.misha.authservice.service.ToolAvailabilityService;
+import org.misha.authservice.service.ToolHistoryService;
 import org.misha.authservice.service.ToolService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,28 +17,24 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping({"/api/tools", "/api/admin/tools"})
+@RequestMapping("/api/tools")
 @RequiredArgsConstructor
 public class ToolController {
     private final ToolService toolService;
     private final ToolAvailabilityService availabilityService;
     private final ToolHistoryService toolHistoryService;
-    private final ToolTemplateRepository templateRepository;
-    private final ToolRepository toolRepository;
 
-    // Получить все инструменты
     @GetMapping
     public List<ToolDtoSimple> getAll() {
         return toolService.getAll();
     }
 
-    // Получить инструмент по ID
     @GetMapping("/{id}")
     public ToolDtoSimple getOne(@PathVariable Long id) {
         return toolService.getOne(id);
     }
 
-    // Дополнительные методы для обратной совместимости
+    @Deprecated(forRemoval = true)
     @GetMapping("/filtered")
     public List<ToolListDto> getTools(
             @RequestParam(required = false) ToolStatus status,
@@ -56,13 +48,11 @@ public class ToolController {
         return ResponseEntity.ok(toolService.getAllTools());
     }
 
-    // Создать инструмент
     @PostMapping
-    public ToolDtoSimple create(@RequestBody CreateToolRequest request) {
+    public ToolDtoSimple create(@Valid @RequestBody CreateToolRequest request) {
         return toolService.create(request);
     }
 
-    // Обновить инструмент
     @PutMapping("/{id}")
     public ResponseEntity<ToolListDto> updateTool(
             @PathVariable Long id,
@@ -71,23 +61,20 @@ public class ToolController {
         return ResponseEntity.ok(toolService.update(id, req));
     }
 
-    // Обновить статус инструмента
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateToolStatus(
             @PathVariable Long id,
-            @RequestBody UpdateToolStatusRequest request) {
+            @Valid @RequestBody UpdateToolStatusRequest request) {
         toolService.updateToolStatus(id, request);
         return ResponseEntity.ok().build();
     }
 
-    // Удалить инструмент
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteTool(@PathVariable Long id) {
         toolService.deleteTool(id);
         return ResponseEntity.noContent().build();
     }
 
-    // Получить доступные инструменты (для договора)
     @GetMapping("/available")
     public ResponseEntity<List<ToolDto>> getAvailableTools(
             @RequestParam(required = false) Long categoryId,
@@ -95,7 +82,6 @@ public class ToolController {
         return ResponseEntity.ok(toolService.getAvailableTools(categoryId, rentalPointId));
     }
 
-    // Получить все экземпляры инструмента по модели
     @GetMapping("/template/{templateId}")
     public ResponseEntity<List<ToolDto>> getToolsByTemplate(@PathVariable Long templateId) {
         return ResponseEntity.ok(toolService.getByTemplate(templateId));
@@ -108,19 +94,16 @@ public class ToolController {
         return ResponseEntity.ok(toolHistoryService.getHistory(id));
     }
 
-    // Загрузить изображения инструмента
     @PostMapping("/{toolId}/images")
     public ResponseEntity<List<ToolImageDto>> uploadToolImages(
             @PathVariable Long toolId,
             @RequestParam("files") MultipartFile[] files) {
-        List<ToolImage> images = toolService.uploadToolImages(toolId, files);
-        List<ToolImageDto> imageDtos = images.stream()
+        List<ToolImageDto> imageDtos = toolService.uploadToolImages(toolId, files).stream()
                 .map(img -> new ToolImageDto(img.getId(), img.getFileName(), img.getContentType()))
                 .toList();
         return ResponseEntity.status(HttpStatus.CREATED).body(imageDtos);
     }
 
-    // Получить изображение инструмента
     @GetMapping("/images/{imageId}")
     public ResponseEntity<byte[]> getToolImage(@PathVariable Long imageId) {
         byte[] imageData = toolService.getToolImage(imageId);
@@ -129,14 +112,13 @@ public class ToolController {
                 .body(imageData);
     }
 
-    // Удалить изображение инструмента
     @DeleteMapping("/images/{imageId}")
     public ResponseEntity<?> deleteToolImage(@PathVariable Long imageId) {
         toolService.deleteToolImage(imageId);
         return ResponseEntity.noContent().build();
     }
 
-    // Старые эндпоинты для обратной совместимости
+    @Deprecated(forRemoval = true)
     @GetMapping("/all-old")
     public ResponseEntity<List<ToolDto>> getAllToolsOld() {
         return ResponseEntity.ok(toolService.getAllTools());
@@ -147,6 +129,7 @@ public class ToolController {
         return ResponseEntity.ok(toolService.getTodayTools());
     }
 
+    @Deprecated(forRemoval = true)
     @GetMapping("/available/old")
     public ResponseEntity<List<AvailableToolDto>> getAvailableToolsOld(@RequestParam Long templateId) {
         List<AvailableToolDto> tools = availabilityService.getAvailableTools(templateId)

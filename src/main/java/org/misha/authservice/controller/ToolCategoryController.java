@@ -1,5 +1,6 @@
 package org.misha.authservice.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.CategoryDto;
 import org.misha.authservice.dto.CategoryFullDto;
@@ -17,7 +18,7 @@ public class ToolCategoryController {
     private final ToolCategoryService categoryService;
 
     @PostMapping
-    public CategoryDto create(@RequestBody CreateCategoryRequest request) {
+    public CategoryDto create(@Valid @RequestBody CreateCategoryRequest request) {
         return categoryService.create(request);
     }
 

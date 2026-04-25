@@ -8,11 +8,21 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.misha.authservice.dto.ContractRequest;
+import org.misha.authservice.dto.excel.ExcelContractDto;
 import org.misha.authservice.entity.Client;
+import org.misha.authservice.entity.RentalDocument;
+import org.misha.authservice.entity.Tool;
+import org.misha.authservice.exception.AppException;
 import org.misha.authservice.exception.BadRequestException;
+import org.misha.authservice.mapper.ExcelContractMapper;
+import org.misha.authservice.repository.ClientRepository;
+import org.misha.authservice.repository.RentalDocumentRepository;
+import org.misha.authservice.repository.ToolRepository;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,6 +34,12 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 public class ContractExcelService {
+
+    private final RentalDocumentRepository documentRepository;
+    private final ClientRepository clientRepository;
+    private final ToolRepository toolRepository;
+    private final ExcelContractMapper excelContractMapper;
+    private final ExcelGeneratorService excelGeneratorService;
 
     private static final String TEMPLATE_CLASSPATH = "templates/lermontov.xlsx";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
@@ -87,6 +103,36 @@ public class ContractExcelService {
             return "";
         }
         return String.format(Locale.US, "%.2f", price);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] generateById(Long contractId) {
+        RentalDocument document = documentRepository.findById(contractId)
+                .orElseThrow(() -> new AppException("CONTRACT_NOT_FOUND", "Договор не найден", HttpStatus.NOT_FOUND));
+
+        Client client = document.getClient();
+        if (client == null) {
+            throw new AppException("CLIENT_NOT_FOUND", "Клиент не найден для договора", HttpStatus.NOT_FOUND);
+        }
+
+        if (client.getPassport() == null) {
+            client = clientRepository.findByIdWithDocuments(client.getId()).orElse(client);
+        }
+
+        Tool tool = null;
+        if (document.getToolId() != null) {
+            tool = toolRepository.findByIdWithTemplateAndContract(document.getToolId()).orElse(null);
+        }
+
+        if (tool == null) {
+            var tools = toolRepository.findByContractIdWithTemplate(contractId);
+            if (!tools.isEmpty()) {
+                tool = tools.get(0);
+            }
+        }
+
+        var excelDto = excelContractMapper.toExcelContractDto(document, tool, client);
+        return excelGeneratorService.generateContractExcel(excelDto);
     }
 }
 

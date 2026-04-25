@@ -1,11 +1,14 @@
 package org.misha.authservice.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public record CreateToolRequest(
-        Long templateId,
-        String name,
+        @NotNull(message = "templateId is required") Long templateId,
+        @NotBlank(message = "name is required") String name,
         String inventoryNumber,
         String article,
-        Double deposit,
+        @NotNull(message = "deposit is required") Double deposit,
         Double purchasePrice,
-        Double dailyPrice
+        @NotNull(message = "dailyPrice is required") Double dailyPrice
 ) {}

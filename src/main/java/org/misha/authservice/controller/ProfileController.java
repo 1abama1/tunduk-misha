@@ -21,13 +21,18 @@ public class ProfileController {
     @GetMapping("/me")
     public ResponseEntity<?> getMe(Authentication authentication) {
         String subject = authentication.getName();
-        // Support both userId (new) and INN (legacy)
-        User user = null;
-        Long userId = Long.valueOf(subject);
-        user = userRepository.findById(userId).orElse(null);
+        Long userId;
+        try {
+            userId = Long.valueOf(subject);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid user identifier"));
+        }
+
+        User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             return ResponseEntity.notFound().build();
         }
+
         Map<String, Object> dto = new LinkedHashMap<>();
         dto.put("id", user.getId());
         dto.put("fullName", user.getFullName());
@@ -43,5 +48,3 @@ public class ProfileController {
         return ResponseEntity.ok(dto);
     }
 }
-
-

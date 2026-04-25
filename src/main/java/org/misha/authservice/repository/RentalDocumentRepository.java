@@ -119,4 +119,13 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
       @Param("toolId") Long toolId,
       @Param("fromDate") LocalDateTime fromDate,
       @Param("toDate") LocalDateTime toDate);
+
+  @Query("SELECT COUNT(d) FROM RentalDocument d WHERE d.returnDate IS NULL AND d.terminatedAt IS NULL")
+  long countActive();
+
+  @Query("SELECT COALESCE(SUM(d.amount), 0) FROM RentalDocument d WHERE d.returnDate IS NOT NULL AND CAST(d.returnDate AS date) = :date")
+  double sumAmountClosedOnDate(@Param("date") java.time.LocalDate date);
+
+  @Query("SELECT COALESCE(SUM(d.amount), 0) FROM RentalDocument d WHERE d.returnDate IS NOT NULL AND EXTRACT(MONTH FROM d.returnDate) = :month AND EXTRACT(YEAR FROM d.returnDate) = :year")
+  double sumAmountClosedInMonth(@Param("month") int month, @Param("year") int year);
 }

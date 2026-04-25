@@ -90,4 +90,6 @@ public interface ToolRepository extends JpaRepository<Tool, Long> {
         WHERE t.contract.id = :contractId
     """)
     List<Tool> findByContractIdWithTemplate(@Param("contractId") Long contractId);
+
+    long countByStatus(ToolStatus status);
 }

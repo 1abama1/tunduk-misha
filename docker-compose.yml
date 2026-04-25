@@ -6,9 +6,9 @@ services:
     container_name: kyrgyz-prokat-db
     restart: always
     environment:
-      POSTGRES_DB: kyrgyzCrm
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123321
+      POSTGRES_DB: ${POSTGRES_DB:-kyrgyzCrm}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -23,11 +23,11 @@ services:
     depends_on:
       - db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/kyrgyzCrm
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: 123321
-      JWT_SECRET: H++w6Z2o20mZqgq0j9jNQX0Rz2aDqv4VQ6YH4xqU3Rk=
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/kyrgyzCrm}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
 
 volumes:
   postgres_data:

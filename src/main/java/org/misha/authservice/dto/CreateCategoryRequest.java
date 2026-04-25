@@ -1,6 +1,7 @@
 package org.misha.authservice.dto;
 
-public record CreateCategoryRequest(
-        String name
-) {}
+import jakarta.validation.constraints.NotBlank;
 
+public record CreateCategoryRequest(
+        @NotBlank(message = "name is required") String name
+) {}

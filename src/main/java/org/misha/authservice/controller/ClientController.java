@@ -1,5 +1,6 @@
 package org.misha.authservice.controller;
 
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.client.ClientCreateRequest;
@@ -22,7 +23,7 @@ public class ClientController {
     private final ClientDirectoryService clientService;
 
     @PostMapping
-    public ClientResponseDto create(@RequestBody ClientCreateRequest dto) {
+    public ClientResponseDto create(@Valid @RequestBody ClientCreateRequest dto) {
         return clientService.create(dto);
     }
 

@@ -1,5 +1,6 @@
 package org.misha.authservice.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.ActiveContractRowDto;
 import org.misha.authservice.dto.AvailableToolDto;
@@ -8,11 +9,9 @@ import org.misha.authservice.dto.ContractRequest;
 import org.misha.authservice.dto.CreateContractRequest;
 import org.misha.authservice.dto.RentalDocumentDto;
 import org.misha.authservice.dto.UpdateContractRequest;
-import org.misha.authservice.entity.ToolTemplate;
 import org.misha.authservice.exception.BadRequestException;
-import org.misha.authservice.repository.ToolRepository;
-import org.misha.authservice.repository.ToolTemplateRepository;
 import org.misha.authservice.service.ContractService;
+import org.misha.authservice.service.ToolService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,28 +26,23 @@ import java.util.Map;
 public class ContractController {
 
     private final ContractService contractService;
-    private final ToolRepository toolRepository;
-    private final ToolTemplateRepository templateRepository;
+    private final ToolService toolService;
 
     @GetMapping("/available")
     public List<AvailableToolDto> getAvailable(@RequestParam Long templateId) {
-        ToolTemplate template = templateRepository.findById(templateId)
-                .orElseThrow(() -> new BadRequestException("Template not found"));
-
-        return toolRepository.findByTemplateIdAndContractIsNull(templateId)
-                .stream()
-                .map(t -> new AvailableToolDto(t.getId(), template.getName(), t.getSerialNumber()))
-                .toList();
+        return toolService.getAvailableByTemplate(templateId);
     }
 
     @PostMapping("/create")
-    public ResponseEntity<RentalDocumentDto> create(@RequestBody CreateContractRequest req) {
+    public ResponseEntity<RentalDocumentDto> create(@Valid @RequestBody CreateContractRequest req) {
         return ResponseEntity.ok(contractService.createContract(req));
     }
 
     @GetMapping
-    public ResponseEntity<List<RentalDocumentDto>> getAll() {
-        return ResponseEntity.ok(contractService.getAll());
+    public ResponseEntity<org.springframework.data.domain.Page<RentalDocumentDto>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(contractService.getAll(page, size));
     }
 
     @GetMapping("/{id}")

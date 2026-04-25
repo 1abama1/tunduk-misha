@@ -20,8 +20,7 @@ public class ClientImage {
     private String fileName;
     private String fileType;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "BYTEA")
     private byte[] data;
 
     @ManyToOne(fetch = FetchType.LAZY)

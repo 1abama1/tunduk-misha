@@ -18,22 +18,14 @@ public class StatsService {
 
         @Transactional(readOnly = true)
         public StatsSummaryDto getSummary() {
-                long active = contractRepository.findAllActive().size();
-                long available = toolRepository.findByStatus(ToolStatus.AVAILABLE).size();
-                long rented = toolRepository.findByStatus(ToolStatus.RENTED).size();
-                long broken = toolRepository.findByStatus(ToolStatus.BROKEN).size();
+                long active = contractRepository.countActive();
+                long available = toolRepository.countByStatus(ToolStatus.AVAILABLE);
+                long rented = toolRepository.countByStatus(ToolStatus.RENTED);
+                long broken = toolRepository.countByStatus(ToolStatus.BROKEN);
 
                 var today = LocalDate.now();
-                double todayRevenue = contractRepository.findAll().stream()
-                                .filter(c -> c.getReturnDate() != null && c.getReturnDate().toLocalDate().equals(today))
-                                .mapToDouble(c -> c.getAmount() == null ? 0 : c.getAmount())
-                                .sum();
-
-                double monthRevenue = contractRepository.findAll().stream()
-                                .filter(c -> c.getReturnDate() != null
-                                                && c.getReturnDate().getMonth().equals(today.getMonth()))
-                                .mapToDouble(c -> c.getAmount() == null ? 0 : c.getAmount())
-                                .sum();
+                double todayRevenue = contractRepository.sumAmountClosedOnDate(today);
+                double monthRevenue = contractRepository.sumAmountClosedInMonth(today.getMonthValue(), today.getYear());
 
                 return new StatsSummaryDto(
                                 active,

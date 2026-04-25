@@ -1,12 +1,14 @@
 package org.misha.authservice.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import org.misha.authservice.entity.Tag;
 
 import java.time.LocalDate;
 
 public record CreateClientRequest(
-                String fullName,
-                String phone,
+                @NotBlank(message = "fullName is required") String fullName,
+                @NotBlank(message = "phone is required") String phone,
                 String whatsappPhone,
                 AddressDto registrationAddress,
                 AddressDto livingAddress,
