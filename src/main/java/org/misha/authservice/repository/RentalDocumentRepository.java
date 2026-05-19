@@ -120,6 +120,19 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
       @Param("fromDate") LocalDateTime fromDate,
       @Param("toDate") LocalDateTime toDate);
 
+  /**
+   * Загружает договор со всеми данными, необходимыми для генерации Excel:
+   * клиент + паспорт — одним JOIN FETCH запросом.
+   * Используется в ContractExcelService.generateById() вместо цепочки lazy-загрузок.
+   */
+  @Query("""
+      SELECT DISTINCT d FROM RentalDocument d
+      LEFT JOIN FETCH d.client c
+      LEFT JOIN FETCH c.passport
+      WHERE d.id = :id
+      """)
+  Optional<RentalDocument> findByIdForExcel(@Param("id") Long id);
+
   @Query("SELECT COUNT(d) FROM RentalDocument d WHERE d.returnDate IS NULL AND d.terminatedAt IS NULL")
   long countActive();
 

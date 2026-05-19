@@ -15,7 +15,6 @@ import org.misha.authservice.entity.Tool;
 import org.misha.authservice.exception.AppException;
 import org.misha.authservice.exception.BadRequestException;
 import org.misha.authservice.mapper.ExcelContractMapper;
-import org.misha.authservice.repository.ClientRepository;
 import org.misha.authservice.repository.RentalDocumentRepository;
 import org.misha.authservice.repository.ToolRepository;
 import org.springframework.core.io.ClassPathResource;
@@ -36,7 +35,6 @@ import java.util.Locale;
 public class ContractExcelService {
 
     private final RentalDocumentRepository documentRepository;
-    private final ClientRepository clientRepository;
     private final ToolRepository toolRepository;
     private final ExcelContractMapper excelContractMapper;
     private final ExcelGeneratorService excelGeneratorService;
@@ -105,9 +103,17 @@ public class ContractExcelService {
         return String.format(Locale.US, "%.2f", price);
     }
 
+    /**
+     * Генерирует Excel по ID договора.
+     *
+     * Оптимизирован: клиент + паспорт загружаются одним JOIN FETCH запросом
+     * через {@code findByIdForExcel}, без дополнительных lazy-обращений.
+     * Tool ищется отдельно (по toolId или по contractId как fallback).
+     */
     @Transactional(readOnly = true)
     public byte[] generateById(Long contractId) {
-        RentalDocument document = documentRepository.findById(contractId)
+        // Один запрос: document + client + passport (LEFT JOIN FETCH)
+        RentalDocument document = documentRepository.findByIdForExcel(contractId)
                 .orElseThrow(() -> new AppException("CONTRACT_NOT_FOUND", "Договор не найден", HttpStatus.NOT_FOUND));
 
         Client client = document.getClient();
@@ -115,15 +121,11 @@ public class ContractExcelService {
             throw new AppException("CLIENT_NOT_FOUND", "Клиент не найден для договора", HttpStatus.NOT_FOUND);
         }
 
-        if (client.getPassport() == null) {
-            client = clientRepository.findByIdWithDocuments(client.getId()).orElse(client);
-        }
-
+        // Ищем инструмент: сначала по toolId, затем fallback по contractId
         Tool tool = null;
         if (document.getToolId() != null) {
             tool = toolRepository.findByIdWithTemplateAndContract(document.getToolId()).orElse(null);
         }
-
         if (tool == null) {
             var tools = toolRepository.findByContractIdWithTemplate(contractId);
             if (!tools.isEmpty()) {

@@ -1,6 +1,5 @@
 package org.misha.authservice.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -11,7 +10,9 @@ import org.misha.authservice.dto.excel.ExcelContractDto;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 
@@ -26,22 +27,36 @@ import java.math.BigDecimal;
  * - Backend не трогает ручные поля (заполняемые офисом)
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class ExcelGeneratorService {
 
     private static final String TEMPLATE_PATH = "templates/lermontov.xlsx";
 
     /**
+     * Байты шаблона, загруженные один раз при старте приложения.
+     * Избегает повторного чтения ClassPathResource на каждый HTTP-запрос.
+     */
+    private final byte[] templateBytes;
+
+    public ExcelGeneratorService() {
+        try (InputStream is = new ClassPathResource(TEMPLATE_PATH).getInputStream()) {
+            this.templateBytes = is.readAllBytes();
+            log.info("Шаблон Excel загружен в кеш: {} байт", templateBytes.length);
+        } catch (IOException e) {
+            throw new IllegalStateException("Не удалось загрузить шаблон Excel: " + TEMPLATE_PATH, e);
+        }
+    }
+
+    /**
      * Генерирует Excel файл договора по шаблону.
-     * 
+     * Шаблон берётся из кеша (байты загружены при старте).
+     *
      * @param dto данные для заполнения
      * @return массив байтов готового .xlsx файла
      */
     public byte[] generateContractExcel(ExcelContractDto dto) {
         try (
-                InputStream is = new ClassPathResource(TEMPLATE_PATH).getInputStream();
-                Workbook workbook = WorkbookFactory.create(is);
+                Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(templateBytes));
                 ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             fillContractSheet(workbook, dto);
             fillToolPriceSheet(workbook, dto);
