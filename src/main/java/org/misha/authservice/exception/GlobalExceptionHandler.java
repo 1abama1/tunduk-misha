@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidPhoneException.class)
+    public ResponseEntity<ApiError> handleInvalidPhone(InvalidPhoneException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_PHONE", ex.getMessage());
+    }
+
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage());

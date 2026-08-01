@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh").permitAll()
                         .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh").permitAll()
+                        .requestMatchers("/api/v1/tools/**").permitAll()
                         .requestMatchers("/api/profile/me").authenticated()
                         .requestMatchers("/api/admin/contracts/excel", "/api/admin/contracts/*/excel", "/api/admin/contracts/*/excel/").hasAnyRole("ADMIN", "OPERATOR")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

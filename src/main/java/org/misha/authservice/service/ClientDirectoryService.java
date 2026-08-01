@@ -62,6 +62,28 @@ public class ClientDirectoryService {
     }
 
     @Transactional
+    public ClientResponseDto update(Long id, org.misha.authservice.dto.client.ClientUpdateRequest dto) {
+        Client client = clientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+
+        if (dto.fullName() != null) client.setFullName(dto.fullName());
+        if (dto.phone() != null) client.setPhone(dto.phone());
+        if (dto.email() != null) client.setEmail(dto.email());
+        if (dto.whatsappPhone() != null) client.setWhatsappPhone(dto.whatsappPhone());
+        if (dto.registrationAddress() != null) client.setRegistrationAddress(toAddress(dto.registrationAddress()));
+        if (dto.livingAddress() != null) client.setLivingAddress(toAddress(dto.livingAddress()));
+        if (dto.passportNumber() != null) client.setPassportNumber(dto.passportNumber());
+        if (dto.passportIssuedAt() != null) client.setPassportIssuedAt(dto.passportIssuedAt());
+        if (dto.birthDate() != null) client.setBirthDate(dto.birthDate());
+        if (dto.pin() != null) client.setPin(dto.pin());
+        if (dto.birthYear() != null) client.setBirthYear(dto.birthYear());
+        if (dto.comment() != null) client.setComment(dto.comment());
+
+        clientRepository.save(client);
+        return toDto(client);
+    }
+
+    @Transactional
     public void addTag(Long clientId, String tag) {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
