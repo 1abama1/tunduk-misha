@@ -59,7 +59,6 @@ public class AdminClientService {
         // Сортировка (можно также вынести в SQL, но для простоты оставляем в памяти)
         Comparator<Client> cmp = switch (sort) {
             case "name" -> Comparator.comparing(Client::getFullName, Comparator.nullsLast(String::compareTo));
-            case "email" -> Comparator.comparing(Client::getEmail, Comparator.nullsLast(String::compareTo));
             case "documents" -> Comparator.comparingInt(c -> {
                 // Подсчет документов - можно оптимизировать через JOIN COUNT в SQL
                 return c.getDocuments() != null ? c.getDocuments().size() : 0;
@@ -78,7 +77,6 @@ public class AdminClientService {
                         c.getId(),
                         defaultString(c.getFullName()),
                         defaultString(c.getPhone()),
-                        defaultString(c.getEmail()),
                         addressToString(c.getRegistrationAddress()),
                         addressToString(c.getLivingAddress()),
                         c.getTag() != null ? c.getTag().name() : null,

@@ -40,9 +40,6 @@ public class ClientService {
         if (clientRepository.existsByPhone(req.phone()))
             throw new AppException("PHONE_EXISTS", "Телефон уже используется!", HttpStatus.CONFLICT);
 
-        if (req.email() != null && clientRepository.existsByEmail(req.email()))
-            throw new AppException("EMAIL_EXISTS", "Email уже используется!", HttpStatus.CONFLICT);
-
         Client client = Client.builder()
                 .fullName(req.fullName())
                 .phone(req.phone())
@@ -50,7 +47,6 @@ public class ClientService {
                 .registrationAddress(toAddress(req.registrationAddress()))
                 .livingAddress(toAddress(req.livingAddress()))
                 .objectAddress(req.objectAddress())
-                .email(req.email())
                 .birthDate(req.birthDate())
                 .comment(req.comment())
                 .tag(req.tag())
@@ -129,8 +125,6 @@ public class ClientService {
             client.setLivingAddress(toAddress(req.livingAddress()));
         if (req.objectAddress() != null)
             client.setObjectAddress(req.objectAddress());
-        if (req.email() != null)
-            client.setEmail(req.email());
         if (req.birthDate() != null)
             client.setBirthDate(req.birthDate());
         if (req.comment() != null)

@@ -13,7 +13,6 @@ public record CreateClientRequest(
                 AddressDto registrationAddress,
                 AddressDto livingAddress,
                 String objectAddress,
-                String email,
                 LocalDate birthDate,
                 String comment,
                 PassportDto passport,

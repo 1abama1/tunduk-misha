@@ -69,7 +69,6 @@ public class ClientCardService {
                                 .registrationAddress(toAddressDto(client.getRegistrationAddress()))
                                 .livingAddress(toAddressDto(client.getLivingAddress()))
                                 .objectAddress(client.getObjectAddress())
-                                .email(client.getEmail())
                                 .tag(client.getTag() != null ? client.getTag().name() : null)
                                 .activeContracts(active)
                                 .history(history)

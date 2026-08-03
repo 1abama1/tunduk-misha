@@ -10,6 +10,7 @@ public record ExcelContractDto(
         String toolFullName,      // <название> <модель> #<номер>
         BigDecimal pricePerDay,
         BigDecimal depositAmount,
+        Integer quantity,
         ClientExcelDto client,
         RentalExcelDto rental
 ) {

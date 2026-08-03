@@ -13,13 +13,9 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
     boolean existsByPhone(String phone);
 
-    boolean existsByEmail(String email);
-
     List<Client> findByFullNameContainingIgnoreCase(String name);
 
     List<Client> findByPhone(String phone);
-
-    Optional<Client> findByEmail(String email);
 
     @Query("SELECT DISTINCT c FROM Client c LEFT JOIN FETCH c.documents LEFT JOIN FETCH c.passport")
     List<Client> findAllWithDocuments();
@@ -32,7 +28,6 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
                 c.id,
                 c.fullName,
                 c.phone,
-                c.email,
                 CASE WHEN EXISTS (
                     SELECT 1 FROM RentalDocument d
                     WHERE d.client.id = c.id AND d.returnDate IS NULL AND d.terminatedAt IS NULL
@@ -42,8 +37,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
             FROM Client c
             WHERE (:query IS NULL
                 OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR c.phone LIKE CONCAT('%', :query, '%')
-                OR LOWER(c.email) LIKE LOWER(CONCAT('%', :query, '%')))
+                OR c.phone LIKE CONCAT('%', :query, '%'))
             ORDER BY c.fullName ASC
             """)
     List<ClientLightSearchDto> searchLight(@Param("query") String query);
@@ -56,8 +50,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
                 OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(c.registrationAddress) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR LOWER(c.livingAddress) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR LOWER(c.email) LIKE LOWER(CONCAT('%', :query, '%')))
+                OR LOWER(c.livingAddress) LIKE LOWER(CONCAT('%', :query, '%')))
             AND (:tag IS NULL OR c.tag = :tag)
             AND (:hasDocuments IS NULL
                 OR (:hasDocuments = true AND EXISTS (SELECT 1 FROM RentalDocument rd WHERE rd.client.id = c.id))

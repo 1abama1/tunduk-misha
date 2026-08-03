@@ -15,6 +15,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 import java.io.IOException;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.CellType;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +45,7 @@ public class ExcelClientImportService {
             String passportNumber = getValue(sheet, "G19");
             String issuedBy = getValue(sheet, "J19");
             String subdivisionCode = getValue(sheet, "K19");
+            LocalDate issueDate = getLocalDateValue(sheet, "M19");
 
             // Адрес регистрации (Регион в C20, Улица в J20)
             String regRegion = getValue(sheet, "C20");
@@ -62,8 +65,7 @@ public class ExcelClientImportService {
             String objectAddress = getValue(sheet, "K22");
 
             // Дата рождения (A23)
-            String birthDateStr = getValue(sheet, "A23");
-            LocalDate birthDate = parseDate(birthDateStr);
+            LocalDate birthDate = getLocalDateValue(sheet, "A23");
 
             CreateClientRequest req = new CreateClientRequest(
                     fullName,
@@ -72,7 +74,6 @@ public class ExcelClientImportService {
                     registrationAddress,
                     livingAddress,
                     objectAddress,
-                    null, // email
                     birthDate,
                     "Импорт из Excel (шаблон)", // comment
                     new PassportDto(
@@ -80,7 +81,7 @@ public class ExcelClientImportService {
                             passportNumber,
                             issuedBy,
                             subdivisionCode,
-                            null, // issueDate
+                            issueDate, // issueDate
                             inn),
                     null // tag
             );
@@ -125,6 +126,26 @@ public class ExcelClientImportService {
         }
         try {
             return LocalDate.parse(dateStr, DATE_FORMATTER);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private LocalDate getLocalDateValue(Sheet sheet, String cellRef) {
+        try {
+            int rowIdx = parseRowIndex(cellRef);
+            int colIdx = parseColumnIndex(cellRef);
+            var row = sheet.getRow(rowIdx);
+            if (row == null) return null;
+            var cell = row.getCell(colIdx);
+            if (cell == null) return null;
+
+            if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+                return cell.getLocalDateTimeCellValue().toLocalDate();
+            } else {
+                String str = dataFormatter.formatCellValue(cell);
+                return parseDate(str);
+            }
         } catch (Exception e) {
             return null;
         }

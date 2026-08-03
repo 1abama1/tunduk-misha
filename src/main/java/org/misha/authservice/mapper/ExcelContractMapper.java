@@ -110,6 +110,7 @@ public class ExcelContractMapper {
                 toolFullName,
                 pricePerDay,
                 depositAmount,
+                1, // quantity
                 clientDto,
                 rentalDto);
     }

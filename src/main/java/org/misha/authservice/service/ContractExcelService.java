@@ -72,7 +72,6 @@ public class ContractExcelService {
                 String updated = original
                         .replace("{{CLIENT_FULLNAME}}", safe(client.getFullName()))
                         .replace("{{CLIENT_PHONE}}", safe(client.getPhone()))
-                        .replace("{{CLIENT_EMAIL}}", safe(client.getEmail()))
                         .replace("{{CLIENT_ADDRESS}}", safe(
                                 client.getRegistrationAddress() != null
                                         ? client.getRegistrationAddress()

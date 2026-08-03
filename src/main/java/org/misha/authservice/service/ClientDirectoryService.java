@@ -25,7 +25,6 @@ public class ClientDirectoryService {
         Client client = Client.builder()
                 .fullName(dto.fullName())
                 .phone(dto.phone())
-                .email(dto.email())
                 .whatsappPhone(dto.whatsappPhone())
                 .registrationAddress(toAddress(dto.registrationAddress()))
                 .livingAddress(toAddress(dto.livingAddress()))
@@ -68,7 +67,6 @@ public class ClientDirectoryService {
 
         if (dto.fullName() != null) client.setFullName(dto.fullName());
         if (dto.phone() != null) client.setPhone(dto.phone());
-        if (dto.email() != null) client.setEmail(dto.email());
         if (dto.whatsappPhone() != null) client.setWhatsappPhone(dto.whatsappPhone());
         if (dto.registrationAddress() != null) client.setRegistrationAddress(toAddress(dto.registrationAddress()));
         if (dto.livingAddress() != null) client.setLivingAddress(toAddress(dto.livingAddress()));
@@ -117,7 +115,6 @@ public class ClientDirectoryService {
                 .id(c.getId())
                 .fullName(c.getFullName())
                 .phone(c.getPhone())
-                .email(c.getEmail())
                 .whatsappPhone(c.getWhatsappPhone())
                 .passportNumber(c.getPassportNumber())
                 .passportIssuedAt(c.getPassportIssuedAt())

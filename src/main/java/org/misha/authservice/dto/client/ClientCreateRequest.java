@@ -15,7 +15,6 @@ public record ClientCreateRequest(
         LocalDate birthDate,
         String pin,
         Integer birthYear,
-        String email,
         String comment
 ) {
 }

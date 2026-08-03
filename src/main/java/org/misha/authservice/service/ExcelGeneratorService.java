@@ -89,8 +89,11 @@ public class ExcelGeneratorService {
         set(sheet, "A12", dto.toolFullName());
 
         // Контакты
-        set(sheet, "D7", dto.client().phone());
-        set(sheet, "G7", dto.client().whatsapp());
+        String contacts = dto.client().phone();
+        if (dto.client().whatsapp() != null && !dto.client().whatsapp().isBlank()) {
+            contacts += ", WA: " + dto.client().whatsapp();
+        }
+        set(sheet, "D7", contacts);
 
         // ФИО
         set(sheet, "A18", dto.client().fullName());
@@ -109,7 +112,8 @@ public class ExcelGeneratorService {
             set(sheet, "J20", dto.client().registrationAddress().street());
         }
         // Фактический: регион → A21, улица → I21
-        if (dto.client().livingAddress() != null) {
+        if (dto.client().livingAddress() != null &&
+            !dto.client().livingAddress().equals(dto.client().registrationAddress())) {
             set(sheet, "A21", dto.client().livingAddress().region());
             set(sheet, "I21", dto.client().livingAddress().street());
         }
@@ -133,11 +137,19 @@ public class ExcelGeneratorService {
             return;
         }
 
+        // N20 — Стоимость аренды за 1 сутки
         if (dto.pricePerDay() != null) {
-            set(sheet, "I20", dto.pricePerDay());
+            set(sheet, "N20", dto.pricePerDay());
         }
+
+        // P20 — Залог (обеспечительный платеж)
         if (dto.depositAmount() != null) {
             set(sheet, "P20", dto.depositAmount());
+        }
+
+        // I20 — Количество оборудования
+        if (dto.quantity() != null) {
+            set(sheet, "I20", dto.quantity());
         }
     }
 
@@ -146,9 +158,9 @@ public class ExcelGeneratorService {
     // -------------------------------------------------------
 
     private void fillActSheet(Workbook workbook, ExcelContractDto dto) {
-        Sheet sheet = workbook.getSheet("Акт расч.");
+        Sheet sheet = workbook.getSheet("Акт расч");
         if (sheet == null) {
-            log.warn("Лист 'Акт расч.' не найден в шаблоне");
+            log.warn("Лист 'Акт расч' не найден в шаблоне");
             return;
         }
 
@@ -197,7 +209,7 @@ public class ExcelGeneratorService {
      */
     private void clear(Sheet sheet, String cellRef) {
         Cell cell = getCell(sheet, cellRef);
-        cell.setCellValue(""); // Используем пустую строку вместо setBlank, чтобы сохранить стили и валидацию
+        cell.setBlank(); // Используем setBlank, чтобы сохранить связи, стили и валидацию
     }
 
     /**

@@ -42,19 +42,27 @@ public class ToolCategoryService {
 
     @Transactional(readOnly = true)
     public CategoryFullDto getFull(Long id) {
-        ToolCategory category = categoryRepository.findById(id)
+        ToolCategory category = categoryRepository.findByIdWithTemplatesAndTools(id)
                 .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Category not found"));
 
-        List<ToolTemplate> templates = templateRepository.findByCategoryId(id);
-
-        List<TemplateFullDto> templateDtos = templates.stream().map(t -> {
-            List<Tool> tools = toolRepository.findByTemplateId(t.getId());
-
-            List<ToolDtoSimple> toolDtos = tools.stream().map(ToolDtoSimple::fromEntity).toList();
-
+        List<TemplateFullDto> templateDtos = category.getTemplates().stream().map(t -> {
+            List<ToolDtoSimple> toolDtos = t.getTools().stream().map(ToolDtoSimple::fromEntity).toList();
             return new TemplateFullDto(t.getId(), t.getName(), toolDtos);
         }).toList();
 
         return new CategoryFullDto(category.getId(), category.getName(), templateDtos);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryFullDto> getAllFull() {
+        List<ToolCategory> categories = categoryRepository.findAllWithTemplatesAndTools();
+
+        return categories.stream().map(category -> {
+            List<TemplateFullDto> templateDtos = category.getTemplates().stream().map(t -> {
+                List<ToolDtoSimple> toolDtos = t.getTools().stream().map(ToolDtoSimple::fromEntity).toList();
+                return new TemplateFullDto(t.getId(), t.getName(), toolDtos);
+            }).toList();
+            return new CategoryFullDto(category.getId(), category.getName(), templateDtos);
+        }).toList();
     }
 }

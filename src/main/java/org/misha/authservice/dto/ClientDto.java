@@ -20,7 +20,6 @@ public class ClientDto {
     private AddressDto registrationAddress;
     private AddressDto livingAddress;
     private String objectAddress;
-    private String email;
     private LocalDate birthDate;
     private String comment;
     private PassportDto passport;

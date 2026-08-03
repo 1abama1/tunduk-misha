@@ -3,18 +3,22 @@ package org.misha.authservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "tool_categories")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = "templates")
 public class ToolCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false, unique = true)
@@ -22,5 +26,5 @@ public class ToolCategory {
 
     @OneToMany(mappedBy = "category")
     @Builder.Default
-    private List<ToolTemplate> templates = new ArrayList<>();
+    private Set<ToolTemplate> templates = new HashSet<>();
 }

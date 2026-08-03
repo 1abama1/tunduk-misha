@@ -31,4 +31,9 @@ public class ToolCategoryController {
     public CategoryFullDto getFull(@PathVariable Long id) {
         return categoryService.getFull(id);
     }
+
+    @GetMapping("/all/full")
+    public List<CategoryFullDto> getAllFull() {
+        return categoryService.getAllFull();
+    }
 }

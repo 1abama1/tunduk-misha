@@ -11,7 +11,6 @@ public record UpdateClientRequest(
                 AddressDto registrationAddress,
                 AddressDto livingAddress,
                 String objectAddress,
-                String email,
                 LocalDate birthDate,
                 String comment,
                 PassportDto passport,
