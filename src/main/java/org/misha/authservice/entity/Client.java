@@ -20,6 +20,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.UpdateTimestamp;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -77,6 +79,9 @@ public class Client {
 
         @Column(columnDefinition = "TEXT")
         private String comment;
+
+        @UpdateTimestamp
+        private LocalDateTime updatedAt;
 
         @Enumerated(EnumType.STRING)
         private Tag tag;

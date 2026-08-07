@@ -53,6 +53,22 @@ public class ToolController {
         return toolService.create(request);
     }
 
+    /**
+     * Пакетное создание экземпляров инструментов.
+     *
+     * <p>POST /api/tools/batch
+     * <p>Body: {"templateId": 1, "count": 5, "dailyPrice": 1500.0, "deposit": 5000.0}
+     *
+     * <p>Сервис автоматически вычислит следующий инвентарный номер и создаст
+     * {@code count} новых экземпляров с инкрементом.
+     */
+    @PostMapping("/batch")
+    public ResponseEntity<List<ToolDto>> createBatch(
+            @Valid @RequestBody CreateToolBatchRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(toolService.createToolsInBatch(request));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ToolListDto> updateTool(
             @PathVariable Long id,

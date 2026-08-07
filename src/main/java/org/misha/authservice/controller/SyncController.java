@@ -20,4 +20,9 @@ public class SyncController {
     public ResponseEntity<ContractSyncDto.SyncResponse> syncContracts(@RequestBody ContractSyncDto syncDto) {
         return ResponseEntity.ok(syncService.syncContracts(syncDto));
     }
+
+    @org.springframework.web.bind.annotation.GetMapping("/pull")
+    public ResponseEntity<org.misha.authservice.dto.SyncPullResponse> pullSync(@org.springframework.web.bind.annotation.RequestParam("since") long since) {
+        return ResponseEntity.ok(syncService.pullSync(since));
+    }
 }

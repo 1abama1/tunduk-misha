@@ -21,7 +21,6 @@ public class ContractSyncDto {
         private Long clientId;
         private Long toolId;
         private String contractNumber;
-        private LocalDateTime startDateTime;
     }
 
     @Data
@@ -37,6 +36,8 @@ public class ContractSyncDto {
         private String offlineId;
         private Double paidAmount;
         private String comment;
+        private boolean isBroken;
+        private LocalDateTime actualReturnDate;
     }
 
     @Data

@@ -13,6 +13,8 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
 
     boolean existsByPhone(String phone);
 
+    List<Client> findByUpdatedAtAfter(java.time.LocalDateTime since);
+
     List<Client> findByFullNameContainingIgnoreCase(String name);
 
     List<Client> findByPhone(String phone);

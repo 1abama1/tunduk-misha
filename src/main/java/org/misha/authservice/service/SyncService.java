@@ -5,12 +5,26 @@ import org.misha.authservice.dto.CloseContractRequest;
 import org.misha.authservice.dto.ContractSyncDto;
 import org.misha.authservice.dto.CreateContractRequest;
 import org.misha.authservice.dto.UpdateContractRequest;
+import org.misha.authservice.dto.SyncPullResponse;
+import org.misha.authservice.mapper.ClientMapper;
+import org.misha.authservice.repository.ClientRepository;
 import org.misha.authservice.repository.RentalDocumentRepository;
+import org.misha.authservice.repository.ToolCategoryRepository;
+import org.misha.authservice.repository.ToolRepository;
+import org.misha.authservice.repository.ToolTemplateRepository;
+import org.misha.authservice.dto.CategoryDto;
+import org.misha.authservice.dto.TemplateDto;
+import org.misha.authservice.dto.ToolDto;
+import org.misha.authservice.dto.RentalDocumentDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +32,11 @@ public class SyncService {
 
     private final ContractService contractService;
     private final RentalDocumentRepository documentRepository;
+    private final ClientRepository clientRepository;
+    private final ToolRepository toolRepository;
+    private final ToolCategoryRepository categoryRepository;
+    private final ToolTemplateRepository templateRepository;
+    private final ClientMapper clientMapper;
 
     @Transactional
     public ContractSyncDto.SyncResponse syncContracts(ContractSyncDto syncDto) {
@@ -38,7 +57,7 @@ public class SyncService {
                         item.getClientId(),
                         item.getToolId(),
                         item.getContractNumber(),
-                        item.getStartDateTime());
+                        item.getOfflineId());
                 var created = contractService.createContract(req);
 
                 // Update offlineId for the newly created contract
@@ -79,7 +98,7 @@ public class SyncService {
 
                 if (id != null) {
                     contractService.closeContract(id,
-                            new CloseContractRequest(item.getPaidAmount(), item.getComment()));
+                            new CloseContractRequest(item.getPaidAmount(), item.getComment(), item.isBroken(), item.getActualReturnDate()));
                 }
             }
         }
@@ -87,5 +106,55 @@ public class SyncService {
         return ContractSyncDto.SyncResponse.builder()
                 .idMappings(idMappings)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public SyncPullResponse pullSync(long sinceMillis) {
+        LocalDateTime since = LocalDateTime.ofInstant(Instant.ofEpochMilli(sinceMillis), ZoneId.systemDefault());
+
+        var clients = clientRepository.findByUpdatedAtAfter(since).stream()
+                .map(clientMapper::toDto)
+                .toList();
+
+        var tools = toolRepository.findByUpdatedAtAfter(since).stream()
+                .map(ToolDto::fromEntity)
+                .toList();
+
+        var categories = categoryRepository.findByUpdatedAtAfter(since).stream()
+                .map(c -> new CategoryDto(c.getId(), c.getName()))
+                .toList();
+
+        var templates = templateRepository.findByUpdatedAtAfter(since).stream()
+                .map(t -> new TemplateDto(t.getId(), t.getName(), t.getCategory() != null ? t.getCategory().getId() : null))
+                .toList();
+
+        var documents = documentRepository.findByUpdatedAtAfter(since).stream()
+                .map(this::toDto)
+                .toList();
+
+        return SyncPullResponse.builder()
+                .clients(clients)
+                .tools(tools)
+                .categories(categories)
+                .templates(templates)
+                .documents(documents)
+                .lastSyncTimestamp(System.currentTimeMillis())
+                .build();
+    }
+
+    private RentalDocumentDto toDto(org.misha.authservice.entity.RentalDocument doc) {
+        return new RentalDocumentDto(
+                doc.getId(),
+                doc.getContractNumber(),
+                doc.getStartDateTime(),
+                doc.getDailyPrice(),
+                doc.getAmount(),
+                doc.getCreatedAt(),
+                doc.getClient() != null ? doc.getClient().getId() : null,
+                doc.getReturnDate(),
+                doc.getTerminatedAt(),
+                doc.getTerminationReason(),
+                doc.getStatus(),
+                doc.getComment());
     }
 }

@@ -138,9 +138,14 @@ public class RentalService {
                 // 4. Сохраняем toolId перед отвязкой
                 doc.setToolId(tool.getId());
 
-                // 5. Освобождаем инструмент
+                // 5. Освобождаем инструмент и ставим нужный статус
                 tool.setContract(null);
-                tool.setStatus(ToolStatus.AVAILABLE);
+                if (req.isBroken()) {
+                    // Клиент вернул сломанный инструмент — отправляем в ремонт
+                    tool.setStatus(ToolStatus.IN_REPAIR);
+                } else {
+                    tool.setStatus(ToolStatus.AVAILABLE);
+                }
                 toolRepository.save(tool);
 
                 // 6. Закрываем договор

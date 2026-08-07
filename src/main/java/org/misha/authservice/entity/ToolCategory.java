@@ -24,6 +24,9 @@ public class ToolCategory {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @org.hibernate.annotations.UpdateTimestamp
+    private java.time.LocalDateTime updatedAt;
+
     @OneToMany(mappedBy = "category")
     @Builder.Default
     private Set<ToolTemplate> templates = new HashSet<>();

@@ -11,6 +11,8 @@ import java.util.Optional;
 
 public interface RentalDocumentRepository extends JpaRepository<RentalDocument, Long> {
 
+  List<RentalDocument> findByUpdatedAtAfter(LocalDateTime since);
+
   Optional<RentalDocument> findByOfflineId(String offlineId);
 
   List<RentalDocument> findByClientId(Long clientId);
@@ -141,4 +143,34 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
 
   @Query("SELECT COALESCE(SUM(d.amount), 0) FROM RentalDocument d WHERE d.returnDate IS NOT NULL AND EXTRACT(MONTH FROM d.returnDate) = :month AND EXTRACT(YEAR FROM d.returnDate) = :year")
   double sumAmountClosedInMonth(@Param("month") int month, @Param("year") int year);
+
+  /**
+   * Подсчитывает количество инструментов данного шаблона, занятых в указанный период.
+   * <p>
+   * Используется в {@code ToolAvailabilityService} для расчёта доступности по датам.
+   * Условие пересечения периодов: contractStart <= reqEnd AND contractEnd >= reqStart.
+   * Учитываются только незакрытые договоры (returnDate IS NULL AND terminatedAt IS NULL).
+   *
+   * @param templateId  ID шаблона инструмента
+   * @param reqStart    начало запрашиваемого периода
+   * @param reqEnd      конец запрашиваемого периода
+   * @return количество занятых экземпляров на данный период
+   */
+  @Query("""
+      SELECT COUNT(DISTINCT t.id)
+      FROM Tool t
+      JOIN t.contract d
+      WHERE t.template.id = :templateId
+        AND d.returnDate IS NULL
+        AND d.terminatedAt IS NULL
+        AND d.startDateTime <= :reqEnd
+      """)
+  int countBusyToolsByTemplateAndDates(
+      @Param("templateId") Long templateId,
+      @Param("reqStart") LocalDateTime reqStart,
+      @Param("reqEnd") LocalDateTime reqEnd
+  );
+
+
 }
+

@@ -48,6 +48,8 @@ public class RentalDocument {
     private Client client;
 
     private LocalDateTime createdAt;
+
+    /** Фактическая дата возврата (заполняется при закрытии договора) */
     private LocalDateTime returnDate;
     private LocalDateTime terminatedAt;
     private String terminationReason;

@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ToolCategoryRepository extends JpaRepository<ToolCategory, Long> {
+    List<ToolCategory> findByUpdatedAtAfter(java.time.LocalDateTime since);
     Optional<ToolCategory> findByName(String name);
 
     @EntityGraph(attributePaths = {"templates", "templates.tools"})

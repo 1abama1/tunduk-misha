@@ -6,10 +6,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface ToolRepository extends JpaRepository<Tool, Long> {
+
+    List<Tool> findByUpdatedAtAfter(LocalDateTime since);
+
     List<Tool> findByContractId(Long contractId);
 
     @Query(
@@ -28,18 +32,17 @@ public interface ToolRepository extends JpaRepository<Tool, Long> {
     long countByTemplateIdAndContractNotNull(Long templateId);
 
     List<Tool> findByTemplateIdAndContractIsNull(Long templateId);
-    
-    // Новые методы для расширенной функциональности
+
     List<Tool> findByStatus(ToolStatus status);
-    
+
     @Query("SELECT t FROM Tool t WHERE t.template.category.id = :categoryId")
     List<Tool> findByCategoryId(@Param("categoryId") Long categoryId);
-    
+
     List<Tool> findByRentalPointId(Long rentalPointId);
-    
+
     @Query("SELECT t FROM Tool t WHERE t.contract IS NULL AND t.status = :status")
     List<Tool> findAvailableByStatus(@Param("status") ToolStatus status);
-    
+
     @Query("""
            SELECT t FROM Tool t
            WHERE t.contract IS NULL
@@ -50,7 +53,7 @@ public interface ToolRepository extends JpaRepository<Tool, Long> {
             @Param("categoryId") Long categoryId,
             @Param("rentalPointId") Long rentalPointId
     );
-    
+
     boolean existsByInventoryNumber(String inventoryNumber);
 
     @Query("""
@@ -92,4 +95,45 @@ public interface ToolRepository extends JpaRepository<Tool, Long> {
     List<Tool> findByContractIdWithTemplate(@Param("contractId") Long contractId);
 
     long countByStatus(ToolStatus status);
+
+    /**
+     * Подсчитывает экземпляры данного шаблона по конкретному статусу.
+     * Используется в алгоритме доступности.
+     */
+    long countByTemplateIdAndStatus(Long templateId, ToolStatus status);
+
+    /**
+     * Возвращает максимальный инвентарный номер среди экземпляров данного шаблона.
+     * Используется при пакетном создании для автоинкремента номеров.
+     */
+    @Query("SELECT MAX(t.inventoryNumber) FROM Tool t WHERE t.template.id = :templateId")
+    Optional<String> findMaxInventoryNumberByTemplateId(@Param("templateId") Long templateId);
+
+    /**
+     * Находит все свободные экземпляры заданного шаблона на указанный период.
+     * <p>
+     * Алгоритм: инструмент считается занятым, если существует незакрытый договор,
+     * период которого пересекается с [startDate, endDate].
+     * Условие пересечения: {@code contractStart <= endDate AND contractEnd >= startDate}.
+     * Инструменты со статусом IN_REPAIR, BROKEN, DECOMMISSIONED исключены.
+     */
+    @Query("""
+        SELECT t FROM Tool t
+        WHERE t.template.id = :templateId
+          AND t.status = org.misha.authservice.entity.ToolStatus.AVAILABLE
+          AND t.id NOT IN (
+              SELECT t2.id FROM Tool t2
+              JOIN t2.contract d
+              WHERE t2.template.id = :templateId
+                AND d.returnDate IS NULL
+                AND d.terminatedAt IS NULL
+                AND d.startDateTime <= :endDate
+          )
+        ORDER BY t.inventoryNumber ASC
+    """)
+    List<Tool> findAvailableForPeriod(
+            @Param("templateId") Long templateId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

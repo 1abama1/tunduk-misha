@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ToolTemplateRepository extends JpaRepository<ToolTemplate, Long> {
+    List<ToolTemplate> findByUpdatedAtAfter(java.time.LocalDateTime since);
     List<ToolTemplate> findByCategoryId(Long categoryId);
 }

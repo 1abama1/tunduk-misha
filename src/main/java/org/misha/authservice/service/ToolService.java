@@ -1,6 +1,7 @@
 package org.misha.authservice.service;
 
 import lombok.RequiredArgsConstructor;
+import org.misha.authservice.dto.CreateToolBatchRequest;
 import org.misha.authservice.dto.CreateToolRequest;
 import org.misha.authservice.dto.ToolAttributeDto;
 import org.misha.authservice.dto.AvailableToolDto;
@@ -155,6 +156,87 @@ public class ToolService {
         return savedTool;
     }
 
+    /**
+     * Пакетное создание экземпляров инструментов для заданного шаблона.
+     *
+     * <p>Алгоритм:
+     * <ol>
+     *   <li>Находит шаблон по ID.</li>
+     *   <li>Ищет MAX инвентарный номер среди всех экземпляров шаблона.</li>
+     *   <li>Парсит числовую часть номера (поддерживает "042", "PREF-042", "инструмент-42").</li>
+     *   <li>Создаёт {@code count} новых экземпляров с инкрементом номера.</li>
+     * </ol>
+     *
+     * @param request запрос с templateId и count
+     * @return список созданных инструментов в виде ToolDto
+     */
+    @Transactional
+    public List<ToolDto> createToolsInBatch(CreateToolBatchRequest request) {
+        ToolTemplate template = templateRepository.findById(request.templateId())
+                .orElseThrow(() -> new AppException(
+                        "TEMPLATE_NOT_FOUND",
+                        "Template not found: " + request.templateId(),
+                        HttpStatus.NOT_FOUND));
+
+        // Определяем следующий инвентарный номер
+        String maxInventory = toolRepository
+                .findMaxInventoryNumberByTemplateId(request.templateId())
+                .orElse(null);
+
+        String prefix = "";
+        int nextNumber = 1;
+
+        if (maxInventory != null) {
+            // Парсим: ищем последнюю числовую группу в конце строки
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("^(.*?)(\\d+)$")
+                    .matcher(maxInventory.trim());
+            if (m.matches()) {
+                prefix = m.group(1);                    // "PREF-" или ""
+                nextNumber = Integer.parseInt(m.group(2)) + 1;
+            } else {
+                // Номер без числа — просто добавляем суффикс
+                prefix = maxInventory + "-";
+                nextNumber = 1;
+            }
+        }
+
+        int padLength = Math.max(3, String.valueOf(nextNumber + request.count()).length());
+
+        List<Tool> created = new ArrayList<>(request.count());
+        for (int i = 0; i < request.count(); i++) {
+            String inventoryNumber = prefix + String.format("%0" + padLength + "d", nextNumber + i);
+
+            // Пропускаем уже существующий номер (edge case при параллельных вставках)
+            if (toolRepository.existsByInventoryNumber(inventoryNumber)) {
+                nextNumber++;
+                inventoryNumber = prefix + String.format("%0" + padLength + "d", nextNumber + i);
+            }
+
+            Tool tool = Tool.builder()
+                    .template(template)
+                    .name(template.getName())
+                    .inventoryNumber(inventoryNumber)
+                    .deposit(request.deposit())
+                    .purchasePrice(request.purchasePrice())
+                    .dailyPrice(request.dailyPrice())
+                    .status(ToolStatus.AVAILABLE)
+                    .build();
+
+            created.add(toolRepository.save(tool));
+        }
+
+        auditLogService.logCreate("Tool", null, Map.of(
+                "action", "BATCH_CREATE",
+                "templateId", request.templateId(),
+                "count", request.count(),
+                "firstInventory", created.isEmpty() ? "N/A" : created.get(0).getInventoryNumber(),
+                "lastInventory", created.isEmpty() ? "N/A" : created.get(created.size() - 1).getInventoryNumber()
+        ));
+
+        return created.stream().map(this::toDto).collect(Collectors.toList());
+    }
+
     @Transactional
     public ToolListDto update(Long id, UpdateToolRequest req) {
         Tool tool = toolRepository.findByIdWithTemplateAndContract(id)
@@ -217,16 +299,29 @@ public class ToolService {
         Tool tool = toolRepository.findById(id)
                 .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "Tool not found", HttpStatus.NOT_FOUND));
 
-        // Нельзя вручную установить RENTED
+        // Нельзя вручную установить RENTED — это делается автоматически при выдаче договора
         if (request.status() == ToolStatus.RENTED) {
-            throw new AppException("CANNOT_SET_RENTED", "Cannot set RENTED status manually. It is set automatically when tool is assigned to contract.", HttpStatus.BAD_REQUEST);
+            throw new AppException(
+                    "CANNOT_SET_RENTED",
+                    "Cannot set RENTED status manually. It is set automatically when tool is assigned to contract.",
+                    HttpStatus.BAD_REQUEST);
         }
 
-        // Если есть активный договор, нельзя изменить статус
+        // Если есть активный договор, нельзя изменить статус (инструмент у клиента)
         toolRentalGuard.ensureCanChangeStatus(tool);
 
+        ToolStatus oldStatus = tool.getStatus();
         tool.setStatus(request.status());
         toolRepository.save(tool);
+
+        // Логируем смену статуса с причиной (если указана)
+        Map<String, Object> auditData = new java.util.HashMap<>();
+        auditData.put("oldStatus", oldStatus.name());
+        auditData.put("newStatus", request.status().name());
+        if (request.reason() != null && !request.reason().isBlank()) {
+            auditData.put("reason", request.reason());
+        }
+        auditLogService.logUpdate("Tool", id, auditData);
     }
 
     @Transactional

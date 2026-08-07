@@ -8,6 +8,7 @@ import org.misha.authservice.dto.UpdateContractRequest;
 import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.RentalDocument;
 import org.misha.authservice.entity.Tool;
+import org.misha.authservice.entity.ToolStatus;
 import org.misha.authservice.exception.AppException;
 import org.misha.authservice.exception.BadRequestException;
 import org.misha.authservice.exception.NotFoundException;
@@ -81,8 +82,6 @@ public class ContractCrudService {
                 .orElseThrow(() -> new NotFoundException("Инструмент не найден"));
 
         toolRentalGuard.ensureAvailableForRental(tool);
-
-        LocalDateTime startDateTime = req.startDateTime() != null ? req.startDateTime() : LocalDateTime.now();
         String contractNumber = (req.contractNumber() != null && !req.contractNumber().isBlank())
                 ? req.contractNumber()
                 : generateDailyContractNumber();
@@ -90,9 +89,10 @@ public class ContractCrudService {
         RentalDocument doc = RentalDocument.builder()
                 .client(client)
                 .contractNumber(contractNumber)
-                .startDateTime(startDateTime)
+                .startDateTime(LocalDateTime.now())
                 .amount(null)
                 .dailyPrice(null)
+                .offlineId(req.offlineId())
                 .build();
 
         documentRepository.save(doc);
@@ -126,12 +126,22 @@ public class ContractCrudService {
             doc.setToolId(tools.get(0).getId());
         }
 
+        // Определяем статус инструмента после возврата
+        boolean isBroken = req != null && req.isBroken();
+        ToolStatus toolStatusAfterReturn = isBroken ? ToolStatus.IN_REPAIR : ToolStatus.AVAILABLE;
+
         for (Tool tool : tools) {
             tool.setContract(null);
+            tool.setStatus(toolStatusAfterReturn);
             toolRepository.save(tool);
         }
 
-        doc.setReturnDate(LocalDateTime.now());
+        // Фактическая дата возврата: берём из запроса или ставим сейчас
+        LocalDateTime actualReturn = (req != null && req.actualReturnDate() != null)
+                ? req.actualReturnDate()
+                : LocalDateTime.now();
+        doc.setReturnDate(actualReturn);
+
         if (req != null) {
             if (req.paidAmount() != null) {
                 doc.setAmount(req.paidAmount());
@@ -146,7 +156,9 @@ public class ContractCrudService {
         auditLogService.logContractClose(contractId, Map.of(
                 "contractNumber", doc.getContractNumber(),
                 "toolsCount", tools.size(),
-                "paidAmount", req != null ? req.paidAmount() : "N/A"));
+                "paidAmount", req != null && req.paidAmount() != null ? req.paidAmount() : "N/A",
+                "isBroken", isBroken,
+                "toolStatusAfterReturn", toolStatusAfterReturn.name()));
     }
 
     @Transactional
