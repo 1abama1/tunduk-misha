@@ -1,28 +1,31 @@
 package org.misha.authservice.dto;
 
-import org.misha.authservice.entity.Tool;
+import org.misha.authservice.entity.ToolInstance;
+import java.util.UUID;
+import java.math.BigDecimal;
 
 public record ToolDtoSimple(
         Long id,
         String name,
         String inventoryNumber,
+        Integer instanceNumber,
         String article,
-        Double deposit,
-        Double purchasePrice,
-        Double dailyPrice,
+        BigDecimal deposit,
+        BigDecimal purchasePrice,
+        BigDecimal dailyPrice,
         String status
 ) {
-    public static ToolDtoSimple fromEntity(Tool t) {
+    public static ToolDtoSimple fromEntity(ToolInstance t) {
         return new ToolDtoSimple(
                 t.getId(),
-                t.getName(),
+                t.getTemplate() != null ? t.getTemplate().getName() : null,
                 t.getInventoryNumber(),
-                t.getArticle(),
-                t.getDeposit(),
-                t.getPurchasePrice(),
-                t.getDailyPrice(),
-                t.getStatus().name()
+                t.getInstanceNumber(),
+                null,
+                t.getTemplate() != null ? t.getTemplate().getDepositAmount() : null,
+                null,
+                t.getTemplate() != null ? t.getTemplate().getDailyRentalPrice() : null,
+                t.getContract() != null ? "RENTED" : (t.getStatus() != null ? t.getStatus().name() : "AVAILABLE")
         );
     }
 }
-

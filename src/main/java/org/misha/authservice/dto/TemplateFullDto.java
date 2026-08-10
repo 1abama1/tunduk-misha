@@ -3,7 +3,7 @@ package org.misha.authservice.dto;
 import java.util.List;
 
 public record TemplateFullDto(
-        Long id,
+        java.util.UUID id,
         String name,
         List<ToolDtoSimple> tools
 ) {}

@@ -28,7 +28,7 @@ public class ToolCategoryController {
     }
 
     @GetMapping("/{id}/full")
-    public CategoryFullDto getFull(@PathVariable Long id) {
+    public CategoryFullDto getFull(@PathVariable java.util.UUID id) {
         return categoryService.getFull(id);
     }
 

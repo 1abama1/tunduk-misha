@@ -29,12 +29,12 @@ public class ToolTemplateController {
     }
 
     @GetMapping
-    public List<TemplateDto> getByCategory(@RequestParam Long categoryId) {
+    public List<TemplateDto> getByCategory(@RequestParam java.util.UUID categoryId) {
         return service.getByCategory(categoryId);
     }
 
     @GetMapping("/{id}")
-    public TemplateFullDto getOne(@PathVariable Long id) {
+    public TemplateFullDto getOne(@PathVariable java.util.UUID id) {
         return service.getFull(id);
     }
 
@@ -55,7 +55,7 @@ public class ToolTemplateController {
      */
     @GetMapping("/{id}/availability")
     public ResponseEntity<Map<String, Object>> checkAvailability(
-            @PathVariable Long id,
+            @PathVariable java.util.UUID id,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
         int count = availabilityService.getAvailableCount(id, start, end);

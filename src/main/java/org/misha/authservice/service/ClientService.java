@@ -37,13 +37,13 @@ public class ClientService {
     @Transactional
     public ClientDto create(CreateClientRequest req) {
 
-        if (clientRepository.existsByPhone(req.phone()))
+        if (clientRepository.existsByWhatsappPhone(req.whatsappPhone()))
             throw new AppException("PHONE_EXISTS", "Телефон уже используется!", HttpStatus.CONFLICT);
 
         Client client = Client.builder()
                 .fullName(req.fullName())
-                .phone(req.phone())
                 .whatsappPhone(req.whatsappPhone())
+                .additionalPhone(req.additionalPhone())
                 .registrationAddress(toAddress(req.registrationAddress()))
                 .livingAddress(toAddress(req.livingAddress()))
                 .objectAddress(req.objectAddress())
@@ -115,10 +115,10 @@ public class ClientService {
 
         if (req.fullName() != null)
             client.setFullName(req.fullName());
-        if (req.phone() != null)
-            client.setPhone(req.phone());
         if (req.whatsappPhone() != null)
             client.setWhatsappPhone(req.whatsappPhone());
+        if (req.additionalPhone() != null)
+            client.setAdditionalPhone(req.additionalPhone());
         if (req.registrationAddress() != null)
             client.setRegistrationAddress(toAddress(req.registrationAddress()));
         if (req.livingAddress() != null)

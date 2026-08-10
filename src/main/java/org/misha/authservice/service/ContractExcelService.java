@@ -11,12 +11,12 @@ import org.misha.authservice.dto.ContractRequest;
 import org.misha.authservice.dto.excel.ExcelContractDto;
 import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.RentalDocument;
-import org.misha.authservice.entity.Tool;
+import org.misha.authservice.entity.ToolInstance;
 import org.misha.authservice.exception.AppException;
 import org.misha.authservice.exception.BadRequestException;
 import org.misha.authservice.mapper.ExcelContractMapper;
 import org.misha.authservice.repository.RentalDocumentRepository;
-import org.misha.authservice.repository.ToolRepository;
+import org.misha.authservice.repository.ToolInstanceRepository;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -35,7 +35,7 @@ import java.util.Locale;
 public class ContractExcelService {
 
     private final RentalDocumentRepository documentRepository;
-    private final ToolRepository toolRepository;
+    private final ToolInstanceRepository ToolInstanceRepository;
     private final ExcelContractMapper excelContractMapper;
     private final ExcelGeneratorService excelGeneratorService;
 
@@ -45,7 +45,7 @@ public class ContractExcelService {
     public byte[] generate(Client client, ContractRequest request) throws IOException {
         Resource template = new ClassPathResource(TEMPLATE_CLASSPATH);
         if (!template.exists()) {
-            throw new BadRequestException("Шаблон договора не найден: " + TEMPLATE_CLASSPATH);
+            throw new BadRequestException("РЁР°Р±Р»РѕРЅ РґРѕРіРѕРІРѕСЂР° РЅРµ РЅР°Р№РґРµРЅ: " + TEMPLATE_CLASSPATH);
         }
 
         try (InputStream is = template.getInputStream();
@@ -71,7 +71,7 @@ public class ContractExcelService {
                 String original = cell.getStringCellValue();
                 String updated = original
                         .replace("{{CLIENT_FULLNAME}}", safe(client.getFullName()))
-                        .replace("{{CLIENT_PHONE}}", safe(client.getPhone()))
+                        .replace("{{CLIENT_PHONE}}", safe(client.getWhatsappPhone()))
                         .replace("{{CLIENT_ADDRESS}}", safe(
                                 client.getRegistrationAddress() != null
                                         ? client.getRegistrationAddress()
@@ -103,37 +103,38 @@ public class ContractExcelService {
     }
 
     /**
-     * Генерирует Excel по ID договора.
+     * Р“РµРЅРµСЂРёСЂСѓРµС‚ Excel РїРѕ ID РґРѕРіРѕРІРѕСЂР°.
      *
-     * Оптимизирован: клиент + паспорт загружаются одним JOIN FETCH запросом
-     * через {@code findByIdForExcel}, без дополнительных lazy-обращений.
-     * Tool ищется отдельно (по toolId или по contractId как fallback).
+     * РћРїС‚РёРјРёР·РёСЂРѕРІР°РЅ: РєР»РёРµРЅС‚ + РїР°СЃРїРѕСЂС‚ Р·Р°РіСЂСѓР¶Р°СЋС‚СЃСЏ РѕРґРЅРёРј JOIN FETCH Р·Р°РїСЂРѕСЃРѕРј
+     * С‡РµСЂРµР· {@code findByIdForExcel}, Р±РµР· РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹С… lazy-РѕР±СЂР°С‰РµРЅРёР№.
+     * ToolInstance РёС‰РµС‚СЃСЏ РѕС‚РґРµР»СЊРЅРѕ (РїРѕ toolId РёР»Рё РїРѕ contractId РєР°Рє fallback).
      */
     @Transactional(readOnly = true)
     public byte[] generateById(Long contractId) {
-        // Один запрос: document + client + passport (LEFT JOIN FETCH)
+        // РћРґРёРЅ Р·Р°РїСЂРѕСЃ: document + client + passport (LEFT JOIN FETCH)
         RentalDocument document = documentRepository.findByIdForExcel(contractId)
-                .orElseThrow(() -> new AppException("CONTRACT_NOT_FOUND", "Договор не найден", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("CONTRACT_NOT_FOUND", "Р”РѕРіРѕРІРѕСЂ РЅРµ РЅР°Р№РґРµРЅ", HttpStatus.NOT_FOUND));
 
         Client client = document.getClient();
         if (client == null) {
-            throw new AppException("CLIENT_NOT_FOUND", "Клиент не найден для договора", HttpStatus.NOT_FOUND);
+            throw new AppException("CLIENT_NOT_FOUND", "РљР»РёРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ РґР»СЏ РґРѕРіРѕРІРѕСЂР°", HttpStatus.NOT_FOUND);
         }
 
-        // Ищем инструмент: сначала по toolId, затем fallback по contractId
-        Tool tool = null;
+        // РС‰РµРј РёРЅСЃС‚СЂСѓРјРµРЅС‚: СЃРЅР°С‡Р°Р»Р° РїРѕ toolId, Р·Р°С‚РµРј fallback РїРѕ contractId
+        ToolInstance ToolInstance = null;
         if (document.getToolId() != null) {
-            tool = toolRepository.findByIdWithTemplateAndContract(document.getToolId()).orElse(null);
+            ToolInstance = ToolInstanceRepository.findByIdWithTemplateAndContract(document.getToolId()).orElse(null);
         }
-        if (tool == null) {
-            var tools = toolRepository.findByContractIdWithTemplate(contractId);
+        if (ToolInstance == null) {
+            var tools = ToolInstanceRepository.findByContractIdWithTemplate(contractId);
             if (!tools.isEmpty()) {
-                tool = tools.get(0);
+                ToolInstance = tools.get(0);
             }
         }
 
-        var excelDto = excelContractMapper.toExcelContractDto(document, tool, client);
+        var excelDto = excelContractMapper.toExcelContractDto(document, ToolInstance, client);
         return excelGeneratorService.generateContractExcel(excelDto);
     }
 }
+
 

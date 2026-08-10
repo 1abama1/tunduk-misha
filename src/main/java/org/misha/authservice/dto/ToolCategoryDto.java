@@ -1,7 +1,7 @@
 package org.misha.authservice.dto;
 
 public record ToolCategoryDto(
-        Long id,
+        java.util.UUID id,
         String name
 ) {}
 

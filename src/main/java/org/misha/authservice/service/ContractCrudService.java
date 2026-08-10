@@ -7,14 +7,13 @@ import org.misha.authservice.dto.RentalDocumentDto;
 import org.misha.authservice.dto.UpdateContractRequest;
 import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.RentalDocument;
-import org.misha.authservice.entity.Tool;
-import org.misha.authservice.entity.ToolStatus;
+import org.misha.authservice.entity.ToolInstance;
 import org.misha.authservice.exception.AppException;
 import org.misha.authservice.exception.BadRequestException;
 import org.misha.authservice.exception.NotFoundException;
 import org.misha.authservice.repository.ClientRepository;
 import org.misha.authservice.repository.RentalDocumentRepository;
-import org.misha.authservice.repository.ToolRepository;
+import org.misha.authservice.repository.ToolInstanceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -26,13 +25,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ContractCrudService {
 
     private final ClientRepository clientRepository;
-    private final ToolRepository toolRepository;
+    private final ToolInstanceRepository toolInstanceRepository;
     private final RentalDocumentRepository documentRepository;
     private final ToolRentalGuard toolRentalGuard;
     private final AuditLogService auditLogService;
@@ -78,7 +78,7 @@ public class ContractCrudService {
         Client client = clientRepository.findById(req.clientId())
                 .orElseThrow(() -> new NotFoundException("Клиент не найден"));
 
-        Tool tool = toolRepository.findById(req.toolId())
+        ToolInstance tool = toolInstanceRepository.findById(req.toolId())
                 .orElseThrow(() -> new NotFoundException("Инструмент не найден"));
 
         toolRentalGuard.ensureAvailableForRental(tool);
@@ -98,7 +98,7 @@ public class ContractCrudService {
         documentRepository.save(doc);
 
         tool.setContract(doc);
-        toolRepository.save(tool);
+        toolInstanceRepository.save(tool);
 
         doc.setToolId(tool.getId());
         documentRepository.save(doc);
@@ -120,23 +120,19 @@ public class ContractCrudService {
             throw new AppException("CONTRACT_ALREADY_CLOSED", "Договор уже завершён", HttpStatus.BAD_REQUEST);
         }
 
-        List<Tool> tools = toolRepository.findByContractId(contractId);
+        List<ToolInstance> tools = toolInstanceRepository.findByContractId(contractId);
 
         if (!tools.isEmpty()) {
             doc.setToolId(tools.get(0).getId());
         }
 
-        // Определяем статус инструмента после возврата
         boolean isBroken = req != null && req.isBroken();
-        ToolStatus toolStatusAfterReturn = isBroken ? ToolStatus.IN_REPAIR : ToolStatus.AVAILABLE;
 
-        for (Tool tool : tools) {
+        for (ToolInstance tool : tools) {
             tool.setContract(null);
-            tool.setStatus(toolStatusAfterReturn);
-            toolRepository.save(tool);
+            toolInstanceRepository.save(tool);
         }
 
-        // Фактическая дата возврата: берём из запроса или ставим сейчас
         LocalDateTime actualReturn = (req != null && req.actualReturnDate() != null)
                 ? req.actualReturnDate()
                 : LocalDateTime.now();
@@ -157,8 +153,7 @@ public class ContractCrudService {
                 "contractNumber", doc.getContractNumber(),
                 "toolsCount", tools.size(),
                 "paidAmount", req != null && req.paidAmount() != null ? req.paidAmount() : "N/A",
-                "isBroken", isBroken,
-                "toolStatusAfterReturn", toolStatusAfterReturn.name()));
+                "isBroken", isBroken));
     }
 
     @Transactional
@@ -201,7 +196,7 @@ public class ContractCrudService {
             throw new AppException("TOOL_ID_MISSING", "Невозможно восстановить договор — не найден инструмент", HttpStatus.BAD_REQUEST);
         }
 
-        Tool tool = toolRepository.findById(doc.getToolId())
+        ToolInstance tool = toolInstanceRepository.findById(doc.getToolId())
                 .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "Инструмент не найден", HttpStatus.NOT_FOUND));
 
         if (tool.getContract() != null && !Objects.equals(tool.getContract().getId(), doc.getId())) {
@@ -209,7 +204,7 @@ public class ContractCrudService {
         }
 
         tool.setContract(doc);
-        toolRepository.save(tool);
+        toolInstanceRepository.save(tool);
 
         doc.setReturnDate(null);
         doc.setTerminatedAt(null);

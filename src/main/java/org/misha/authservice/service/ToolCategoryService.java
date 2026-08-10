@@ -6,23 +6,24 @@ import org.misha.authservice.dto.CategoryFullDto;
 import org.misha.authservice.dto.CreateCategoryRequest;
 import org.misha.authservice.dto.TemplateFullDto;
 import org.misha.authservice.dto.ToolDtoSimple;
-import org.misha.authservice.entity.Tool;
+import org.misha.authservice.entity.ToolInstance;
 import org.misha.authservice.entity.ToolCategory;
 import org.misha.authservice.entity.ToolTemplate;
 import org.misha.authservice.repository.ToolCategoryRepository;
-import org.misha.authservice.repository.ToolRepository;
+import org.misha.authservice.repository.ToolInstanceRepository;
 import org.misha.authservice.repository.ToolTemplateRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ToolCategoryService {
     private final ToolCategoryRepository categoryRepository;
     private final ToolTemplateRepository templateRepository;
-    private final ToolRepository toolRepository;
+    private final ToolInstanceRepository ToolInstanceRepository;
 
     @Transactional
     public CategoryDto create(CreateCategoryRequest request) {
@@ -41,12 +42,12 @@ public class ToolCategoryService {
     }
 
     @Transactional(readOnly = true)
-    public CategoryFullDto getFull(Long id) {
+    public CategoryFullDto getFull(UUID id) {
         ToolCategory category = categoryRepository.findByIdWithTemplatesAndTools(id)
                 .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Category not found"));
 
         List<TemplateFullDto> templateDtos = category.getTemplates().stream().map(t -> {
-            List<ToolDtoSimple> toolDtos = t.getTools().stream().map(ToolDtoSimple::fromEntity).toList();
+            List<ToolDtoSimple> toolDtos = ToolInstanceRepository.findByTemplateId(t.getId()).stream().map(ToolDtoSimple::fromEntity).toList();
             return new TemplateFullDto(t.getId(), t.getName(), toolDtos);
         }).toList();
 
@@ -59,7 +60,7 @@ public class ToolCategoryService {
 
         return categories.stream().map(category -> {
             List<TemplateFullDto> templateDtos = category.getTemplates().stream().map(t -> {
-                List<ToolDtoSimple> toolDtos = t.getTools().stream().map(ToolDtoSimple::fromEntity).toList();
+            List<ToolDtoSimple> toolDtos = ToolInstanceRepository.findByTemplateId(t.getId()).stream().map(ToolDtoSimple::fromEntity).toList();
                 return new TemplateFullDto(t.getId(), t.getName(), toolDtos);
             }).toList();
             return new CategoryFullDto(category.getId(), category.getName(), templateDtos);

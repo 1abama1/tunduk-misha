@@ -8,7 +8,7 @@ import org.misha.authservice.dto.ClientImageDto;
 import org.misha.authservice.dto.ContractHistoryDto;
 import org.misha.authservice.entity.Address;
 import org.misha.authservice.entity.RentalDocument;
-import org.misha.authservice.entity.Tool;
+import org.misha.authservice.entity.ToolInstance;
 import org.misha.authservice.exception.AppException;
 import org.misha.authservice.repository.ClientImageRepository;
 import org.misha.authservice.repository.ClientRepository;
@@ -65,7 +65,7 @@ public class ClientCardService {
                 return ClientCardDto.builder()
                                 .id(client.getId())
                                 .fullName(client.getFullName())
-                                .phone(client.getPhone())
+                                .whatsappPhone(client.getWhatsappPhone())
                                 .registrationAddress(toAddressDto(client.getRegistrationAddress()))
                                 .livingAddress(toAddressDto(client.getLivingAddress()))
                                 .objectAddress(client.getObjectAddress())
@@ -88,19 +88,19 @@ public class ClientCardService {
         }
 
         private ActiveContractDto toActiveContract(RentalDocument doc) {
-                Tool tool = doc.getTools().isEmpty() ? null : doc.getTools().get(0);
+                ToolInstance ToolInstance = doc.getTools().isEmpty() ? null : doc.getTools().get(0);
                 return ActiveContractDto.builder()
                                 .id(doc.getId())
                                 .contractNumber(doc.getContractNumber())
                                 .startDateTime(doc.getStartDateTime())
-                                .toolName(tool != null && tool.getTemplate() != null ? tool.getTemplate().getName()
+                                .toolName(ToolInstance != null && ToolInstance.getTemplate() != null ? ToolInstance.getTemplate().getName()
                                                 : null)
-                                .serialNumber(tool != null ? tool.getSerialNumber() : null)
+                                .serialNumber(ToolInstance != null ? ToolInstance.getInventoryNumber() : null)
                                 .build();
         }
 
         private ContractHistoryDto toHistory(RentalDocument doc) {
-                Tool tool = doc.getTools().isEmpty() ? null : doc.getTools().get(0);
+                ToolInstance ToolInstance = doc.getTools().isEmpty() ? null : doc.getTools().get(0);
                 return ContractHistoryDto.builder()
                                 .id(doc.getId())
                                 .contractNumber(doc.getContractNumber())
@@ -108,9 +108,10 @@ public class ClientCardService {
                                 .returnDate(doc.getReturnDate())
                                 .terminatedAt(doc.getTerminatedAt())
                                 .terminationReason(doc.getTerminationReason())
-                                .toolName(tool != null && tool.getTemplate() != null ? tool.getTemplate().getName()
+                                .toolName(ToolInstance != null && ToolInstance.getTemplate() != null ? ToolInstance.getTemplate().getName()
                                                 : null)
                                 .status(doc.getStatus())
                                 .build();
         }
 }
+

@@ -9,8 +9,8 @@ import java.util.Set;
 public record ClientResponseDto(
         Long id,
         String fullName,
-        String phone,
         String whatsappPhone,
+        String additionalPhone,
         String passportNumber,
         java.time.LocalDate passportIssuedAt,
         java.time.LocalDate birthDate,

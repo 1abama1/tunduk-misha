@@ -158,7 +158,7 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
    */
   @Query("""
       SELECT COUNT(DISTINCT t.id)
-      FROM Tool t
+      FROM ToolInstance t
       JOIN t.contract d
       WHERE t.template.id = :templateId
         AND d.returnDate IS NULL
@@ -166,7 +166,7 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
         AND d.startDateTime <= :reqEnd
       """)
   int countBusyToolsByTemplateAndDates(
-      @Param("templateId") Long templateId,
+      @Param("templateId") java.util.UUID templateId,
       @Param("reqStart") LocalDateTime reqStart,
       @Param("reqEnd") LocalDateTime reqEnd
   );

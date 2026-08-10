@@ -50,10 +50,11 @@ public class Client {
 
         private String fullName;
 
-        @Column(unique = true)
-        private String phone;
-
+        @Column(name = "whatsapp_phone", unique = true)
         private String whatsappPhone;
+
+        @Column(name = "additional_phone")
+        private String additionalPhone;
 
         @Embedded
         @AttributeOverrides({

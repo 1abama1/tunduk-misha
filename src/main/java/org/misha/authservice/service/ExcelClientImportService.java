@@ -32,10 +32,10 @@ public class ExcelClientImportService {
 
             // ФИО
             String fullName = getValue(sheet, "A18");
-            // Телефон
-            String phone = getValue(sheet, "D7");
-            // WhatsApp (если есть)
-            String whatsapp = getValue(sheet, "G7");
+            // WhatsApp-телефон (основной)
+            String whatsappPhone = getValue(sheet, "D7");
+            // Дополнительный телефон
+            String additionalPhone = getValue(sheet, "G7");
 
             // ИНН (C22)
             String inn = getValue(sheet, "C22");
@@ -69,8 +69,8 @@ public class ExcelClientImportService {
 
             CreateClientRequest req = new CreateClientRequest(
                     fullName,
-                    phone,
-                    whatsapp,
+                    whatsappPhone,
+                    additionalPhone,
                     registrationAddress,
                     livingAddress,
                     objectAddress,

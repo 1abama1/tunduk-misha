@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateToolRequest(
-        @NotNull(message = "templateId is required") Long templateId,
+        @NotNull(message = "templateId is required") java.util.UUID templateId,
         @NotBlank(message = "name is required") String name,
         String inventoryNumber,
         String article,

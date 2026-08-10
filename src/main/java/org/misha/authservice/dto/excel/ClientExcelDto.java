@@ -7,8 +7,8 @@ import org.misha.authservice.dto.AddressDto;
  */
 public record ClientExcelDto(
         String fullName,
-        String phone,
-        String whatsapp, // Если совпадает с phone, то пустая строка
+        String whatsappPhone,
+        String additionalPhone, // Если совпадает с whatsappPhone, то пустая строка
         String passportType, // ID, AN, MIA и т.д.
         String passportNumber,
         String passportIssuedBy,

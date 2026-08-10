@@ -13,25 +13,26 @@ import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.ClientImage;
 import org.misha.authservice.entity.ClientPassport;
 import org.misha.authservice.entity.RentalDocument;
-import org.misha.authservice.entity.Tool;
-import org.misha.authservice.repository.ToolRepository;
+import org.misha.authservice.entity.ToolInstance;
+import org.misha.authservice.repository.ToolInstanceRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class ClientMapper {
 
-    private final ToolRepository toolRepository;
+    private final ToolInstanceRepository ToolInstanceRepository;
 
     public ClientDto toDto(Client c) {
         return ClientDto.builder()
                 .id(c.getId())
                 .fullName(c.getFullName())
-                .phone(c.getPhone())
                 .whatsappPhone(c.getWhatsappPhone())
+                .additionalPhone(c.getAdditionalPhone())
                 .registrationAddress(toAddressDto(c.getRegistrationAddress()))
                 .livingAddress(toAddressDto(c.getLivingAddress()))
                 .objectAddress(c.getObjectAddress())
@@ -55,40 +56,40 @@ public class ClientMapper {
     }
 
     public DocumentDto toDocDto(RentalDocument d) {
-        // Получаем инструмент из загруженной коллекции
-        Tool tool = d.getTools() != null && !d.getTools().isEmpty()
+        // РџРѕР»СѓС‡Р°РµРј РёРЅСЃС‚СЂСѓРјРµРЅС‚ РёР· Р·Р°РіСЂСѓР¶РµРЅРЅРѕР№ РєРѕР»Р»РµРєС†РёРё
+        ToolInstance ToolInstance = d.getTools() != null && !d.getTools().isEmpty()
                 ? d.getTools().get(0)
                 : null;
 
-        // Если инструмент не найден в коллекции (например, после закрытия контракта),
-        // но toolId сохранен в документе, пытаемся загрузить инструмент по ID
+        // Р•СЃР»Рё РёРЅСЃС‚СЂСѓРјРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ РІ РєРѕР»Р»РµРєС†РёРё (РЅР°РїСЂРёРјРµСЂ, РїРѕСЃР»Рµ Р·Р°РєСЂС‹С‚РёСЏ РєРѕРЅС‚СЂР°РєС‚Р°),
+        // РЅРѕ toolId СЃРѕС…СЂР°РЅРµРЅ РІ РґРѕРєСѓРјРµРЅС‚Рµ, РїС‹С‚Р°РµРјСЃСЏ Р·Р°РіСЂСѓР·РёС‚СЊ РёРЅСЃС‚СЂСѓРјРµРЅС‚ РїРѕ ID
         Long toolId = d.getToolId();
-        if (tool == null && toolId != null) {
-            tool = toolRepository.findByIdWithTemplateAndContract(toolId).orElse(null);
+        if (ToolInstance == null && toolId != null) {
+            ToolInstance = ToolInstanceRepository.findByIdWithTemplateAndContract(toolId).orElse(null);
         }
 
-        // Если все еще не найден, пытаемся найти через репозиторий по contractId
-        if (tool == null) {
-            List<Tool> tools = toolRepository.findByContractIdWithTemplate(d.getId());
+        // Р•СЃР»Рё РІСЃРµ РµС‰Рµ РЅРµ РЅР°Р№РґРµРЅ, РїС‹С‚Р°РµРјСЃСЏ РЅР°Р№С‚Рё С‡РµСЂРµР· СЂРµРїРѕР·РёС‚РѕСЂРёР№ РїРѕ contractId
+        if (ToolInstance == null) {
+            List<ToolInstance> tools = ToolInstanceRepository.findByContractIdWithTemplate(d.getId());
             if (!tools.isEmpty()) {
-                tool = tools.get(0);
-                toolId = tool.getId();
+                ToolInstance = tools.get(0);
+                toolId = ToolInstance.getId();
             }
         } else {
-            // Используем toolId из инструмента, если он найден
-            toolId = tool.getId();
+            // РСЃРїРѕР»СЊР·СѓРµРј toolId РёР· РёРЅСЃС‚СЂСѓРјРµРЅС‚Р°, РµСЃР»Рё РѕРЅ РЅР°Р№РґРµРЅ
+            toolId = ToolInstance.getId();
         }
 
         String categoryName = null;
         String toolName = null;
         String serialNumber = null;
 
-        if (tool != null) {
-            if (tool.getTemplate() != null) {
-                toolName = tool.getTemplate().getName();
-                serialNumber = tool.getSerialNumber();
-                if (tool.getTemplate().getCategory() != null) {
-                    categoryName = tool.getTemplate().getCategory().getName();
+        if (ToolInstance != null) {
+            if (ToolInstance.getTemplate() != null) {
+                toolName = ToolInstance.getTemplate().getName();
+                serialNumber = ToolInstance.getInventoryNumber();
+                if (ToolInstance.getTemplate().getCategory() != null) {
+                    categoryName = ToolInstance.getTemplate().getCategory().getName();
                 }
             }
         }
@@ -101,7 +102,7 @@ public class ClientMapper {
                 .serialNumber(serialNumber)
                 .startDateTime(d.getStartDateTime())
                 .amount(d.getAmount())
-                .toolId(toolId) // Используем сохраненный toolId или ID найденного инструмента
+                .toolId(toolId) // РСЃРїРѕР»СЊР·СѓРµРј СЃРѕС…СЂР°РЅРµРЅРЅС‹Р№ toolId РёР»Рё ID РЅР°Р№РґРµРЅРЅРѕРіРѕ РёРЅСЃС‚СЂСѓРјРµРЅС‚Р°
                 .returnDate(d.getReturnDate())
                 .terminatedAt(d.getTerminatedAt())
                 .terminationReason(d.getTerminationReason())
@@ -111,28 +112,29 @@ public class ClientMapper {
 
     public DocumentDetailDto toDetailDto(RentalDocument d) {
         // Получаем инструмент
-        Tool tool = d.getTools() != null && !d.getTools().isEmpty()
+        ToolInstance ToolInstance = d.getTools() != null && !d.getTools().isEmpty()
                 ? d.getTools().get(0)
                 : null;
 
+        // но toolId сохранен в документе, пытаемся загрузить инструмент по ID
         Long toolId = d.getToolId();
-        if (tool == null && toolId != null) {
-            tool = toolRepository.findByIdWithTemplateAndContract(toolId).orElse(null);
+        if (ToolInstance == null && toolId != null) {
+            ToolInstance = ToolInstanceRepository.findByIdWithTemplateAndContract(toolId).orElse(null);
         }
 
-        if (tool == null) {
-            List<Tool> tools = toolRepository.findByContractIdWithTemplate(d.getId());
+        if (ToolInstance == null) {
+            List<ToolInstance> tools = ToolInstanceRepository.findByContractIdWithTemplate(d.getId());
             if (!tools.isEmpty()) {
-                tool = tools.get(0);
+                ToolInstance = tools.get(0);
             }
         }
 
-        ToolDto toolDto = tool != null ? ToolDto.fromEntity(tool) : null;
+        ToolDto toolDto = ToolInstance != null ? ToolDto.fromEntity(ToolInstance) : null;
 
-        // Для обратной совместимости или если в tool нет инфы, но она есть в d
-        if (toolDto != null && toolDto.getCategoryName() == null && tool != null && tool.getTemplate() != null
-                && tool.getTemplate().getCategory() != null) {
-            toolDto.setCategoryName(tool.getTemplate().getCategory().getName());
+        // Р”Р»СЏ РѕР±СЂР°С‚РЅРѕР№ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё РёР»Рё РµСЃР»Рё РІ ToolInstance РЅРµС‚ РёРЅС„С‹, РЅРѕ РѕРЅР° РµСЃС‚СЊ РІ d
+        if (toolDto != null && toolDto.getCategoryName() == null && ToolInstance != null && ToolInstance.getTemplate() != null
+                && ToolInstance.getTemplate().getCategory() != null) {
+            toolDto.setCategoryName(ToolInstance.getTemplate().getCategory().getName());
         }
 
         return DocumentDetailDto.builder()
@@ -149,19 +151,19 @@ public class ClientMapper {
                 .comment(d.getComment())
                 .clientId(d.getClient() != null ? d.getClient().getId() : null)
                 .client(d.getClient() != null ? toDtoForDetail(d.getClient()) : null)
-                .toolId(toolId != null ? toolId : (tool != null ? tool.getId() : null))
-                .tool(toolDto)
+                .toolId(toolId != null ? toolId : (ToolInstance != null ? ToolInstance.getId() : null))
+                .ToolInstance(toolDto)
                 .build();
     }
 
     private ClientDto toDtoForDetail(Client c) {
-        // Маппим клиента БЕЗ документов, чтобы избежать бесконечной рекурсии и лишних
-        // данных
+        // РњР°РїРїРёРј РєР»РёРµРЅС‚Р° Р‘Р•Р— РґРѕРєСѓРјРµРЅС‚РѕРІ, С‡С‚РѕР±С‹ РёР·Р±РµР¶Р°С‚СЊ Р±РµСЃРєРѕРЅРµС‡РЅРѕР№ СЂРµРєСѓСЂСЃРёРё Рё Р»РёС€РЅРёС…
+        // РґР°РЅРЅС‹С…
         return ClientDto.builder()
                 .id(c.getId())
                 .fullName(c.getFullName())
-                .phone(c.getPhone())
                 .whatsappPhone(c.getWhatsappPhone())
+                .additionalPhone(c.getAdditionalPhone())
                 .registrationAddress(toAddressDto(c.getRegistrationAddress()))
                 .livingAddress(toAddressDto(c.getLivingAddress()))
                 .objectAddress(c.getObjectAddress())
@@ -197,3 +199,4 @@ public class ClientMapper {
                 .toList();
     }
 }
+

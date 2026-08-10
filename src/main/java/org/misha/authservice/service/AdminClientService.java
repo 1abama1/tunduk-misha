@@ -76,7 +76,7 @@ public class AdminClientService {
                 .map(c -> new ClientSearchResultDto(
                         c.getId(),
                         defaultString(c.getFullName()),
-                        defaultString(c.getPhone()),
+                        defaultString(c.getWhatsappPhone()),
                         addressToString(c.getRegistrationAddress()),
                         addressToString(c.getLivingAddress()),
                         c.getTag() != null ? c.getTag().name() : null,

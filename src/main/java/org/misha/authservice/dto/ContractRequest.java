@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class ContractRequest {
     private Long clientId;
-    private Long templateId;
+    private java.util.UUID templateId;
     private Long toolId;
     private String contractNumber;
     private Double price;

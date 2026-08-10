@@ -9,101 +9,61 @@ import org.misha.authservice.entity.Address;
 import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.ClientPassport;
 import org.misha.authservice.entity.RentalDocument;
-import org.misha.authservice.entity.Tool;
+import org.misha.authservice.entity.ToolInstance;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * Mapper для преобразования сущностей в DTO для генерации Excel.
- */
 @Component
 public class ExcelContractMapper {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    /**
-     * Формирует полное имя инструмента в формате: <название> <модель> #<номер>
-     * 
-     * Пример: "Отбойник BOSCH 16-30 #1"
-     */
-    public String buildToolFullName(Tool tool) {
-        if (tool == null) {
+    public String buildToolFullName(ToolInstance ToolInstance) {
+        if (ToolInstance == null) {
             return "";
         }
 
         StringBuilder sb = new StringBuilder();
 
-        // Название (из template или tool.name)
-        String name = tool.getName();
-        if (name == null || name.isBlank()) {
-            if (tool.getTemplate() != null && tool.getTemplate().getName() != null) {
-                name = tool.getTemplate().getName();
-            } else {
-                name = "";
-            }
+        String name = "";
+        if (ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getName() != null) {
+            name = ToolInstance.getTemplate().getName();
         }
         if (!name.isBlank()) {
             sb.append(name);
         }
 
-        // Модель (article или serialNumber)
-        String model = tool.getArticle();
-        if (model == null || model.isBlank()) {
-            model = tool.getSerialNumber();
-        }
-        if (model != null && !model.isBlank()) {
+        if (ToolInstance.getInventoryNumber() != null && !ToolInstance.getInventoryNumber().isBlank()) {
             if (sb.length() > 0) {
                 sb.append(" ");
             }
-            sb.append(model);
-        }
-
-        // Номер экземпляра
-        if (tool.getInstanceNumber() != null) {
-            if (sb.length() > 0) {
-                sb.append(" ");
-            }
-            sb.append("#").append(tool.getInstanceNumber());
-        } else if (tool.getInventoryNumber() != null && !tool.getInventoryNumber().isBlank()) {
-            // Если нет instanceNumber, используем inventoryNumber
-            if (sb.length() > 0) {
-                sb.append(" ");
-            }
-            sb.append("#").append(tool.getInventoryNumber());
+            sb.append("#").append(ToolInstance.getInventoryNumber());
         }
 
         return sb.toString();
     }
 
-    /**
-     * Преобразует сущности в ExcelContractDto.
-     */
     public ExcelContractDto toExcelContractDto(
             RentalDocument document,
-            Tool tool,
+            ToolInstance ToolInstance,
             Client client) {
-        // Формируем toolFullName
-        String toolFullName = buildToolFullName(tool);
+        String toolFullName = buildToolFullName(ToolInstance);
 
-        // Цены
         BigDecimal pricePerDay = document.getDailyPrice() != null
                 ? BigDecimal.valueOf(document.getDailyPrice())
-                : (tool != null && tool.getDailyPrice() != null
-                        ? BigDecimal.valueOf(tool.getDailyPrice())
+                : (ToolInstance != null && ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getDailyRentalPrice() != null
+                        ? ToolInstance.getTemplate().getDailyRentalPrice()
                         : null);
 
-        BigDecimal depositAmount = tool != null && tool.getDeposit() != null
-                ? BigDecimal.valueOf(tool.getDeposit())
+        BigDecimal depositAmount = ToolInstance != null && ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getDepositAmount() != null
+                ? ToolInstance.getTemplate().getDepositAmount()
                 : null;
 
-        // Данные клиента
         ClientExcelDto clientDto = toClientExcelDto(client);
-
-        // Данные аренды
         RentalExcelDto rentalDto = toRentalExcelDto(document);
 
         return new ExcelContractDto(
@@ -115,27 +75,18 @@ public class ExcelContractMapper {
                 rentalDto);
     }
 
-    /**
-     * Преобразует Client в ClientExcelDto.
-     */
     private ClientExcelDto toClientExcelDto(Client client) {
         if (client == null) {
             return new ClientExcelDto(
                     "", "", "", "", "", "", "", "", null, null, "", "", null);
         }
-
-        // Телефон
-        String phone = client.getPhone() != null ? client.getPhone() : "";
-
-        // WhatsApp
-        String whatsapp = client.getWhatsappPhone();
+        String phone = client.getWhatsappPhone() != null ? client.getWhatsappPhone() : "";
+        String whatsapp = client.getAdditionalPhone();
         if (whatsapp != null && whatsapp.equals(phone)) {
             whatsapp = "";
         } else if (whatsapp == null) {
             whatsapp = "";
         }
-
-        // Паспорт
         ClientPassport passport = client.getPassport();
         String passportType = "";
         String passportNumber = "";
@@ -149,11 +100,9 @@ public class ExcelContractMapper {
             } else {
                 passportType = PassportType.OTHER.getCode();
             }
-
             if (passport.getNumber() != null && !passport.getNumber().isBlank()) {
                 passportNumber = passport.getNumber();
             }
-
             passportIssuedBy = passport.getIssuedBy() != null ? passport.getIssuedBy() : "";
             passportDepartmentCode = passport.getSubdivisionCode() != null ? passport.getSubdivisionCode() : "";
 
@@ -161,24 +110,18 @@ public class ExcelContractMapper {
                 passportIssuedDate = passport.getIssueDate().format(DATE_FORMATTER);
             }
         }
-
-        // Адреса
         AddressDto registrationAddress = toAddressDto(client.getRegistrationAddress());
         AddressDto livingAddress = toAddressDto(client.getLivingAddress());
         if (livingAddress == null && registrationAddress != null) {
             livingAddress = registrationAddress;
         }
-
-        // PIN и год рождения
         String pin = client.getPin();
         if (pin == null || pin.isBlank()) {
             if (client.getPassport() != null) {
                 pin = client.getPassport().getInn();
             }
         }
-        if (pin == null)
-            pin = "";
-
+        if (pin == null) pin = "";
         String birthDate = "";
         if (client.getBirthDate() != null) {
             birthDate = client.getBirthDate().format(DATE_FORMATTER);
@@ -200,21 +143,14 @@ public class ExcelContractMapper {
                 birthDate);
     }
 
-    /**
-     * Преобразует RentalDocument в RentalExcelDto.
-     */
     private RentalExcelDto toRentalExcelDto(RentalDocument document) {
         if (document == null) {
             return new RentalExcelDto("", null, null);
         }
-
-        // Дата начала
         String startDate = "";
         if (document.getStartDateTime() != null) {
             startDate = document.getStartDateTime().toLocalDate().format(DATE_FORMATTER);
         }
-
-        // Дата и время возврата
         String actualReturnDate = null;
         String actualReturnTime = null;
 
@@ -232,8 +168,7 @@ public class ExcelContractMapper {
     }
 
     private AddressDto toAddressDto(Address address) {
-        if (address == null)
-            return null;
+        if (address == null) return null;
         return new AddressDto(address.getRegion(), address.getStreet());
     }
 }

@@ -24,8 +24,8 @@ public class ClientDirectoryService {
     public ClientResponseDto create(ClientCreateRequest dto) {
         Client client = Client.builder()
                 .fullName(dto.fullName())
-                .phone(dto.phone())
                 .whatsappPhone(dto.whatsappPhone())
+                .additionalPhone(dto.additionalPhone())
                 .registrationAddress(toAddress(dto.registrationAddress()))
                 .livingAddress(toAddress(dto.livingAddress()))
                 .passportNumber(dto.passportNumber())
@@ -66,8 +66,8 @@ public class ClientDirectoryService {
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
 
         if (dto.fullName() != null) client.setFullName(dto.fullName());
-        if (dto.phone() != null) client.setPhone(dto.phone());
         if (dto.whatsappPhone() != null) client.setWhatsappPhone(dto.whatsappPhone());
+        if (dto.additionalPhone() != null) client.setAdditionalPhone(dto.additionalPhone());
         if (dto.registrationAddress() != null) client.setRegistrationAddress(toAddress(dto.registrationAddress()));
         if (dto.livingAddress() != null) client.setLivingAddress(toAddress(dto.livingAddress()));
         if (dto.passportNumber() != null) client.setPassportNumber(dto.passportNumber());
@@ -114,8 +114,8 @@ public class ClientDirectoryService {
         return ClientResponseDto.builder()
                 .id(c.getId())
                 .fullName(c.getFullName())
-                .phone(c.getPhone())
                 .whatsappPhone(c.getWhatsappPhone())
+                .additionalPhone(c.getAdditionalPhone())
                 .passportNumber(c.getPassportNumber())
                 .passportIssuedAt(c.getPassportIssuedAt())
                 .birthDate(c.getBirthDate())

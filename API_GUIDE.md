@@ -1053,7 +1053,7 @@ const response = await fetch('http://localhost:8080/api/tools/create', {
   })
 });
 
-const newTool = await response.json();
+const newToolInstance = await response.json();
 ```
 
 **Что получаем в ответе (201 Created):**

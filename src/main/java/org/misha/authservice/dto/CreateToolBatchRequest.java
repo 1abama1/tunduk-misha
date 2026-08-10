@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotNull;
  */
 public record CreateToolBatchRequest(
         @NotNull(message = "templateId is required")
-        Long templateId,
+        java.util.UUID templateId,
 
         @NotNull(message = "count is required")
         @Min(value = 1, message = "count must be at least 1")

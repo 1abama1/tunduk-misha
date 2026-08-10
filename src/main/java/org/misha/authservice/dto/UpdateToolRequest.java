@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public record UpdateToolRequest(
         String name,
-        Long categoryId,
+        java.util.UUID categoryId,
         BigDecimal deposit,
         BigDecimal purchasePrice,
         BigDecimal dailyPrice

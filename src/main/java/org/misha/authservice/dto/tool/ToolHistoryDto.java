@@ -1,4 +1,4 @@
-package org.misha.authservice.dto.tool;
+package org.misha.authservice.dto.ToolInstance;
 
 import java.time.LocalDateTime;
 import lombok.Builder;
@@ -12,3 +12,4 @@ public record ToolHistoryDto(
                 Double amount,
                 String status) {
 }
+

@@ -6,8 +6,8 @@ import java.time.LocalDate;
 
 public record ClientCreateRequest(
         @NotBlank(message = "fullName is required") String fullName,
-        @NotBlank(message = "phone is required") String phone,
-        String whatsappPhone,
+        @NotBlank(message = "whatsappPhone is required") String whatsappPhone,
+        String additionalPhone,
         AddressDto registrationAddress,
         AddressDto livingAddress,
         String passportNumber,

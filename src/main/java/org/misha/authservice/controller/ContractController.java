@@ -26,11 +26,17 @@ import java.util.Map;
 public class ContractController {
 
     private final ContractService contractService;
-    private final ToolService toolService;
+    private final org.misha.authservice.service.ToolAvailabilityService availabilityService;
 
     @GetMapping("/available")
-    public List<AvailableToolDto> getAvailable(@RequestParam Long templateId) {
-        return toolService.getAvailableByTemplate(templateId);
+    public List<AvailableToolDto> getAvailable(@RequestParam java.util.UUID templateId) {
+        return availabilityService.getAvailableTools(templateId).stream()
+                .map(t -> new AvailableToolDto(
+                        t.getId(),
+                        t.getTemplate() != null ? t.getTemplate().getName() : null,
+                        t.getInventoryNumber()
+                ))
+                .toList();
     }
 
     @PostMapping("/create")

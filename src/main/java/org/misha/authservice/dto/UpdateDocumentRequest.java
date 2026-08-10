@@ -11,7 +11,7 @@ public class UpdateDocumentRequest {
     private LocalDateTime startDateTime;
     private LocalDate expectedReturnDate;
     private Double amount;
-    private Long categoryId;
+    private java.util.UUID categoryId;
     private Long toolId;
 }
 

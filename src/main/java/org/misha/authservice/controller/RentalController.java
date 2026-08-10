@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * Контроллер для управления арендой инструментов.
- * Реализует правильную архитектуру: аренда происходит на уровне конкретного
- * экземпляра (Tool).
+ * РљРѕРЅС‚СЂРѕР»Р»РµСЂ РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ Р°СЂРµРЅРґРѕР№ РёРЅСЃС‚СЂСѓРјРµРЅС‚РѕРІ.
+ * Р РµР°Р»РёР·СѓРµС‚ РїСЂР°РІРёР»СЊРЅСѓСЋ Р°СЂС…РёС‚РµРєС‚СѓСЂСѓ: Р°СЂРµРЅРґР° РїСЂРѕРёСЃС…РѕРґРёС‚ РЅР° СѓСЂРѕРІРЅРµ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ
+ * СЌРєР·РµРјРїР»СЏСЂР° (ToolInstance).
  */
 @RestController
 @RequestMapping("/api/rent")
@@ -25,9 +25,9 @@ public class RentalController {
     private final RentalService rentalService;
 
     /**
-     * Аренда инструмента.
-     * Создает договор аренды и привязывает конкретный экземпляр инструмента к
-     * договору.
+     * РђСЂРµРЅРґР° РёРЅСЃС‚СЂСѓРјРµРЅС‚Р°.
+     * РЎРѕР·РґР°РµС‚ РґРѕРіРѕРІРѕСЂ Р°СЂРµРЅРґС‹ Рё РїСЂРёРІСЏР·С‹РІР°РµС‚ РєРѕРЅРєСЂРµС‚РЅС‹Р№ СЌРєР·РµРјРїР»СЏСЂ РёРЅСЃС‚СЂСѓРјРµРЅС‚Р° Рє
+     * РґРѕРіРѕРІРѕСЂСѓ.
      *
      * POST /api/rent
      * Body: {
@@ -44,8 +44,8 @@ public class RentalController {
     }
 
     /**
-     * Возврат инструмента.
-     * Освобождает инструмент от договора и закрывает договор.
+     * Р’РѕР·РІСЂР°С‚ РёРЅСЃС‚СЂСѓРјРµРЅС‚Р°.
+     * РћСЃРІРѕР±РѕР¶РґР°РµС‚ РёРЅСЃС‚СЂСѓРјРµРЅС‚ РѕС‚ РґРѕРіРѕРІРѕСЂР° Рё Р·Р°РєСЂС‹РІР°РµС‚ РґРѕРіРѕРІРѕСЂ.
      *
      * POST /api/rent/return
      * Body: {
@@ -58,11 +58,11 @@ public class RentalController {
         return ResponseEntity.ok(Map.of(
                 "status", "returned",
                 "contractId", req.contractId(),
-                "message", "Tool returned successfully"));
+                "message", "ToolInstance returned successfully"));
     }
 
     /**
-     * Преобразует RentalDocument в DTO.
+     * РџСЂРµРѕР±СЂР°Р·СѓРµС‚ RentalDocument РІ DTO.
      */
     private RentalDocumentDto toDto(RentalDocument doc) {
         return new RentalDocumentDto(
@@ -80,3 +80,4 @@ public class RentalController {
                 doc.getComment());
     }
 }
+

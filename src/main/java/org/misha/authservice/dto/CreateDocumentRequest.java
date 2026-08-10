@@ -6,6 +6,6 @@ import lombok.Data;
 public class CreateDocumentRequest {
     private Long clientId;
     private String contractNumber;
-    private Long categoryId;
+    private java.util.UUID categoryId;
     private Long toolId; // ID ФИЗИЧЕСКОГО инструмента
 }

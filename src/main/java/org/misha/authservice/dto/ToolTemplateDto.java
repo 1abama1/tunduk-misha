@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class ToolTemplateDto {
-    private Long id;
+    private java.util.UUID id;
     private String name;
-    private Long categoryId;
+    private java.util.UUID categoryId;
     private String categoryName;
 }

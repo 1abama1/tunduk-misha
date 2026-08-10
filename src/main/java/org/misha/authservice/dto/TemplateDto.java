@@ -1,8 +1,8 @@
 package org.misha.authservice.dto;
 
 public record TemplateDto(
-        Long id,
+        java.util.UUID id,
         String name,
-        Long categoryId
+        java.util.UUID categoryId
 ) {}
 

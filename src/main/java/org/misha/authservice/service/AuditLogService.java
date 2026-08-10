@@ -11,8 +11,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Сервис для audit logging критических операций.
- * Логирует создание, изменение и удаление договоров, инструментов, клиентов и документов.
+ * РЎРµСЂРІРёСЃ РґР»СЏ audit logging РєСЂРёС‚РёС‡РµСЃРєРёС… РѕРїРµСЂР°С†РёР№.
+ * Р›РѕРіРёСЂСѓРµС‚ СЃРѕР·РґР°РЅРёРµ, РёР·РјРµРЅРµРЅРёРµ Рё СѓРґР°Р»РµРЅРёРµ РґРѕРіРѕРІРѕСЂРѕРІ, РёРЅСЃС‚СЂСѓРјРµРЅС‚РѕРІ, РєР»РёРµРЅС‚РѕРІ Рё РґРѕРєСѓРјРµРЅС‚РѕРІ.
  */
 @Slf4j
 @Service
@@ -20,11 +20,11 @@ import java.util.Map;
 public class AuditLogService {
 
     /**
-     * Логирует создание сущности.
+     * Р›РѕРіРёСЂСѓРµС‚ СЃРѕР·РґР°РЅРёРµ СЃСѓС‰РЅРѕСЃС‚Рё.
      *
-     * @param entityType тип сущности (Contract, Tool, Client, Document)
-     * @param entityId ID созданной сущности
-     * @param details дополнительные детали
+     * @param entityType С‚РёРї СЃСѓС‰РЅРѕСЃС‚Рё (Contract, ToolInstance, Client, Document)
+     * @param entityId ID СЃРѕР·РґР°РЅРЅРѕР№ СЃСѓС‰РЅРѕСЃС‚Рё
+     * @param details РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РґРµС‚Р°Р»Рё
      */
     public void logCreate(String entityType, Long entityId, Map<String, Object> details) {
         String username = getCurrentUsername();
@@ -41,11 +41,11 @@ public class AuditLogService {
     }
 
     /**
-     * Логирует обновление сущности.
+     * Р›РѕРіРёСЂСѓРµС‚ РѕР±РЅРѕРІР»РµРЅРёРµ СЃСѓС‰РЅРѕСЃС‚Рё.
      *
-     * @param entityType тип сущности
-     * @param entityId ID обновленной сущности
-     * @param details дополнительные детали (например, измененные поля)
+     * @param entityType С‚РёРї СЃСѓС‰РЅРѕСЃС‚Рё
+     * @param entityId ID РѕР±РЅРѕРІР»РµРЅРЅРѕР№ СЃСѓС‰РЅРѕСЃС‚Рё
+     * @param details РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РґРµС‚Р°Р»Рё (РЅР°РїСЂРёРјРµСЂ, РёР·РјРµРЅРµРЅРЅС‹Рµ РїРѕР»СЏ)
      */
     public void logUpdate(String entityType, Long entityId, Map<String, Object> details) {
         String username = getCurrentUsername();
@@ -62,11 +62,11 @@ public class AuditLogService {
     }
 
     /**
-     * Логирует удаление сущности.
+     * Р›РѕРіРёСЂСѓРµС‚ СѓРґР°Р»РµРЅРёРµ СЃСѓС‰РЅРѕСЃС‚Рё.
      *
-     * @param entityType тип сущности
-     * @param entityId ID удаленной сущности
-     * @param details дополнительные детали
+     * @param entityType С‚РёРї СЃСѓС‰РЅРѕСЃС‚Рё
+     * @param entityId ID СѓРґР°Р»РµРЅРЅРѕР№ СЃСѓС‰РЅРѕСЃС‚Рё
+     * @param details РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РґРµС‚Р°Р»Рё
      */
     public void logDelete(String entityType, Long entityId, Map<String, Object> details) {
         String username = getCurrentUsername();
@@ -83,10 +83,10 @@ public class AuditLogService {
     }
 
     /**
-     * Логирует закрытие договора.
+     * Р›РѕРіРёСЂСѓРµС‚ Р·Р°РєСЂС‹С‚РёРµ РґРѕРіРѕРІРѕСЂР°.
      *
-     * @param contractId ID договора
-     * @param details дополнительные детали
+     * @param contractId ID РґРѕРіРѕРІРѕСЂР°
+     * @param details РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РґРµС‚Р°Р»Рё
      */
     public void logContractClose(Long contractId, Map<String, Object> details) {
         String username = getCurrentUsername();
@@ -103,11 +103,11 @@ public class AuditLogService {
     }
 
     /**
-     * Логирует расторжение договора.
+     * Р›РѕРіРёСЂСѓРµС‚ СЂР°СЃС‚РѕСЂР¶РµРЅРёРµ РґРѕРіРѕРІРѕСЂР°.
      *
-     * @param contractId ID договора
-     * @param reason причина расторжения
-     * @param details дополнительные детали
+     * @param contractId ID РґРѕРіРѕРІРѕСЂР°
+     * @param reason РїСЂРёС‡РёРЅР° СЂР°СЃС‚РѕСЂР¶РµРЅРёСЏ
+     * @param details РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РґРµС‚Р°Р»Рё
      */
     public void logContractTerminate(Long contractId, String reason, Map<String, Object> details) {
         String username = getCurrentUsername();
@@ -125,11 +125,11 @@ public class AuditLogService {
     }
 
     /**
-     * Логирует загрузку документа.
+     * Р›РѕРіРёСЂСѓРµС‚ Р·Р°РіСЂСѓР·РєСѓ РґРѕРєСѓРјРµРЅС‚Р°.
      *
-     * @param documentType тип документа
-     * @param entityId ID сущности, к которой привязан документ
-     * @param fileName имя файла
+     * @param documentType С‚РёРї РґРѕРєСѓРјРµРЅС‚Р°
+     * @param entityId ID СЃСѓС‰РЅРѕСЃС‚Рё, Рє РєРѕС‚РѕСЂРѕР№ РїСЂРёРІСЏР·Р°РЅ РґРѕРєСѓРјРµРЅС‚
+     * @param fileName РёРјСЏ С„Р°Р№Р»Р°
      */
     public void logDocumentUpload(String documentType, Long entityId, String fileName) {
         String username = getCurrentUsername();
@@ -144,11 +144,11 @@ public class AuditLogService {
     }
 
     /**
-     * Логирует загрузку изображения.
+     * Р›РѕРіРёСЂСѓРµС‚ Р·Р°РіСЂСѓР·РєСѓ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ.
      *
-     * @param imageType тип изображения (Tool, Client)
-     * @param entityId ID сущности
-     * @param fileName имя файла
+     * @param imageType С‚РёРї РёР·РѕР±СЂР°Р¶РµРЅРёСЏ (ToolInstance, Client)
+     * @param entityId ID СЃСѓС‰РЅРѕСЃС‚Рё
+     * @param fileName РёРјСЏ С„Р°Р№Р»Р°
      */
     public void logImageUpload(String imageType, Long entityId, String fileName) {
         String username = getCurrentUsername();
@@ -163,9 +163,9 @@ public class AuditLogService {
     }
 
     /**
-     * Получает имя текущего пользователя из SecurityContext.
+     * РџРѕР»СѓС‡Р°РµС‚ РёРјСЏ С‚РµРєСѓС‰РµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР· SecurityContext.
      *
-     * @return имя пользователя или "SYSTEM" если не аутентифицирован
+     * @return РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РёР»Рё "SYSTEM" РµСЃР»Рё РЅРµ Р°СѓС‚РµРЅС‚РёС„РёС†РёСЂРѕРІР°РЅ
      */
     private String getCurrentUsername() {
         try {
@@ -175,7 +175,7 @@ public class AuditLogService {
                 if (principal instanceof String) {
                     return (String) principal;
                 }
-                // Если principal - это UserDetails, можно получить username
+                // Р•СЃР»Рё principal - СЌС‚Рѕ UserDetails, РјРѕР¶РЅРѕ РїРѕР»СѓС‡РёС‚СЊ username
                 return principal.toString();
             }
         } catch (Exception e) {
@@ -184,4 +184,5 @@ public class AuditLogService {
         return "SYSTEM";
     }
 }
+
 

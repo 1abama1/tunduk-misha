@@ -29,5 +29,6 @@ public class DocumentDetailDto {
     private ClientDto client;
 
     private Long toolId;
-    private ToolDto tool;
+    private ToolDto ToolInstance;
 }
+

@@ -64,7 +64,7 @@ public class RentalDocument {
 
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
-    private List<Tool> tools = new ArrayList<>();
+    private List<ToolInstance> tools = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

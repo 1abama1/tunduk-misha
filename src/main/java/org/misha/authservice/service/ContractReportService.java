@@ -5,9 +5,9 @@ import org.misha.authservice.dto.ActiveContractRowDto;
 import org.misha.authservice.dto.ContractTableDto;
 import org.misha.authservice.entity.ContractStatus;
 import org.misha.authservice.entity.RentalDocument;
-import org.misha.authservice.entity.Tool;
+import org.misha.authservice.entity.ToolInstance;
 import org.misha.authservice.repository.RentalDocumentRepository;
-import org.misha.authservice.repository.ToolRepository;
+import org.misha.authservice.repository.ToolInstanceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,13 +15,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class ContractReportService {
 
     private final RentalDocumentRepository documentRepository;
-    private final ToolRepository toolRepository;
+    private final ToolInstanceRepository ToolInstanceRepository;
 
     @Transactional(readOnly = true)
     public List<ActiveContractRowDto> getActiveContractsTable() {
@@ -30,11 +31,11 @@ public class ContractReportService {
         return list.stream().map(c -> {
             String clientName = c.getClient() != null && c.getClient().getFullName() != null
                     ? c.getClient().getFullName()
-                    : "—";
+                    : "вЂ”";
 
-            List<Tool> tools = toolRepository.findByContractIdWithTemplate(c.getId());
+            List<ToolInstance> tools = ToolInstanceRepository.findByContractIdWithTemplate(c.getId());
 
-            String toolName = "—";
+            String toolName = "вЂ”";
             if (!tools.isEmpty()) {
                 if (tools.size() == 1) {
                     toolName = getDisplayName(tools.get(0));
@@ -42,17 +43,17 @@ public class ContractReportService {
                     toolName = tools.stream()
                             .map(this::getDisplayName)
                             .reduce((a, b) -> a + ", " + b)
-                            .orElse("—");
+                            .orElse("вЂ”");
                 }
             } else if (c.getToolId() != null) {
-                toolName = toolRepository.findByIdWithTemplateAndContract(c.getToolId())
+                toolName = ToolInstanceRepository.findByIdWithTemplateAndContract(c.getToolId())
                         .map(this::getDisplayName)
-                        .orElse("—");
+                        .orElse("вЂ”");
             }
 
             String startDate = c.getStartDateTime() != null
                     ? c.getStartDateTime().toString()
-                    : "—";
+                    : "вЂ”";
 
             Double balance = c.getAmount() != null ? c.getAmount() : 0.0;
 
@@ -92,11 +93,9 @@ public class ContractReportService {
                 .toList();
     }
 
-    private String getDisplayName(Tool tool) {
-        if (tool.getName() != null && !tool.getName().isBlank()) {
-            return tool.getName();
-        } else if (tool.getTemplate() != null && tool.getTemplate().getName() != null) {
-            return tool.getTemplate().getName();
+    private String getDisplayName(ToolInstance ToolInstance) {
+        if (ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getName() != null) {
+            return ToolInstance.getTemplate().getName();
         } else {
             return "—";
         }
@@ -108,25 +107,23 @@ public class ContractReportService {
             return null;
         }
 
-        Tool tool = null;
+        ToolInstance ToolInstance = null;
         if (doc.getToolId() != null) {
-            tool = toolRepository.findById(doc.getToolId()).orElse(null);
+            ToolInstance = ToolInstanceRepository.findById(doc.getToolId()).orElse(null);
         }
 
         String toolName;
         String serialNumber;
-        if (tool == null) {
+        if (ToolInstance == null) {
             toolName = "—";
             serialNumber = null;
         } else {
-            if (tool.getName() != null && !tool.getName().isBlank()) {
-                toolName = tool.getName();
-            } else if (tool.getTemplate() != null && tool.getTemplate().getName() != null) {
-                toolName = tool.getTemplate().getName();
+            if (ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getName() != null) {
+                toolName = ToolInstance.getTemplate().getName();
             } else {
                 toolName = "—";
             }
-            serialNumber = tool.getSerialNumber();
+            serialNumber = ToolInstance.getInventoryNumber();
         }
 
         LocalDateTime actualReturn = doc.getReturnDate() != null
@@ -136,7 +133,7 @@ public class ContractReportService {
         return ContractTableDto.builder()
                 .id(doc.getId())
                 .contractNumber(doc.getContractNumber())
-                .clientName(doc.getClient() != null ? doc.getClient().getFullName() : "—")
+                .clientName(doc.getClient() != null ? doc.getClient().getFullName() : "вЂ”")
                 .toolName(toolName)
                 .serialNumber(serialNumber)
                 .startDateTime(doc.getStartDateTime())
@@ -146,3 +143,4 @@ public class ContractReportService {
                 .build();
     }
 }
+

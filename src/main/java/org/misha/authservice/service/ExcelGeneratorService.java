@@ -89,9 +89,9 @@ public class ExcelGeneratorService {
         set(sheet, "A12", dto.toolFullName());
 
         // Контакты
-        String contacts = dto.client().phone();
-        if (dto.client().whatsapp() != null && !dto.client().whatsapp().isBlank()) {
-            contacts += ", WA: " + dto.client().whatsapp();
+        String contacts = dto.client().whatsappPhone();
+        if (dto.client().additionalPhone() != null && !dto.client().additionalPhone().isBlank()) {
+            contacts += ", Доп: " + dto.client().additionalPhone();
         }
         set(sheet, "D7", contacts);
 

@@ -1,15 +1,14 @@
 package org.misha.authservice.dto;
 
-import org.misha.authservice.entity.ToolStatus;
-
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public record ToolListDto(
         Long id,
         String name,
         String inventoryNumber,
-        ToolStatus status,
+        Integer instanceNumber,
+        String status,
         String categoryName,
         BigDecimal deposit
 ) {}
-

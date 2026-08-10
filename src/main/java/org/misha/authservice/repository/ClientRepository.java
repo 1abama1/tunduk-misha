@@ -11,13 +11,14 @@ import java.util.Optional;
 
 public interface ClientRepository extends JpaRepository<Client, Long> {
 
-    boolean existsByPhone(String phone);
+    boolean existsByWhatsappPhone(String whatsappPhone);
 
     List<Client> findByUpdatedAtAfter(java.time.LocalDateTime since);
 
     List<Client> findByFullNameContainingIgnoreCase(String name);
 
-    List<Client> findByPhone(String phone);
+    @Query("SELECT c FROM Client c LEFT JOIN FETCH c.documents WHERE c.whatsappPhone = :whatsappPhone")
+    List<Client> findByWhatsappPhone(String whatsappPhone);
 
     @Query("SELECT DISTINCT c FROM Client c LEFT JOIN FETCH c.documents LEFT JOIN FETCH c.passport")
     List<Client> findAllWithDocuments();
@@ -29,7 +30,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
             SELECT new org.misha.authservice.dto.ClientLightSearchDto(
                 c.id,
                 c.fullName,
-                c.phone,
+                c.whatsappPhone,
                 CASE WHEN EXISTS (
                     SELECT 1 FROM RentalDocument d
                     WHERE d.client.id = c.id AND d.returnDate IS NULL AND d.terminatedAt IS NULL
@@ -39,7 +40,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
             FROM Client c
             WHERE (:query IS NULL
                 OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR c.phone LIKE CONCAT('%', :query, '%'))
+                OR c.whatsappPhone LIKE CONCAT('%', :query, '%'))
             ORDER BY c.fullName ASC
             """)
     List<ClientLightSearchDto> searchLight(@Param("query") String query);
@@ -50,7 +51,7 @@ public interface ClientRepository extends JpaRepository<Client, Long> {
             LEFT JOIN c.documents d
             WHERE (:query IS NULL OR :query = ''
                 OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :query, '%'))
-                OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :query, '%'))
+                OR LOWER(c.whatsappPhone) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(c.registrationAddress) LIKE LOWER(CONCAT('%', :query, '%'))
                 OR LOWER(c.livingAddress) LIKE LOWER(CONCAT('%', :query, '%')))
             AND (:tag IS NULL OR c.tag = :tag)

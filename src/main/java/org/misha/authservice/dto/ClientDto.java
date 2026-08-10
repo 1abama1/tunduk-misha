@@ -15,8 +15,8 @@ import java.util.List;
 public class ClientDto {
     private Long id;
     private String fullName;
-    private String phone;
     private String whatsappPhone;
+    private String additionalPhone;
     private AddressDto registrationAddress;
     private AddressDto livingAddress;
     private String objectAddress;

@@ -4,13 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.misha.authservice.entity.Tool;
-import org.misha.authservice.entity.ToolStatus;
+import org.misha.authservice.entity.ToolInstance;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.UUID;
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -19,74 +17,44 @@ import java.util.stream.Collectors;
 public class ToolDto {
     private Long id;
     private String name;
-    private String article;
     private String inventoryNumber;
-    private ToolStatus status;
-    private Long categoryId;
+    private Integer instanceNumber;
+    private String status;
+    private UUID categoryId;
     private String categoryName;
-    private Long rentalPointId;
-    private String rentalPointName;
-    private Double purchasePrice;
-    private Double deposit;
-    private Double dailyPrice;
-    private List<ToolAttributeDto> attributes;
-    private List<ToolImageDto> images;
+    private BigDecimal deposit;
+    private BigDecimal dailyPrice;
     private LocalDateTime createdAt;
-    
-    // Для обратной совместимости
-    private String serialNumber;
     private ToolTemplateDto template;
 
-    public static ToolDto fromEntity(Tool tool) {
+    public static ToolDto fromEntity(ToolInstance t) {
         ToolDto dto = new ToolDto();
-        dto.setId(tool.getId());
-        dto.setName(tool.getName());
-        dto.setArticle(tool.getArticle());
-        dto.setInventoryNumber(tool.getInventoryNumber());
-        dto.setStatus(tool.getStatus());
-        dto.setPurchasePrice(tool.getPurchasePrice());
-        dto.setDeposit(tool.getDeposit());
-        dto.setDailyPrice(tool.getDailyPrice());
-        dto.setCreatedAt(tool.getCreatedAt());
-        dto.setSerialNumber(tool.getSerialNumber());
-
-        // Категория берется из template
-        if (tool.getTemplate() != null && tool.getTemplate().getCategory() != null) {
-            dto.setCategoryId(tool.getTemplate().getCategory().getId());
-            dto.setCategoryName(tool.getTemplate().getCategory().getName());
+        dto.setId(t.getId());
+        dto.setInventoryNumber(t.getInventoryNumber());
+        dto.setInstanceNumber(t.getInstanceNumber());
+        dto.setCreatedAt(t.getCreatedAt());
+        
+        if (t.getContract() != null) {
+            dto.setStatus("RENTED");
+        } else {
+            dto.setStatus(t.getStatus() != null ? t.getStatus().name() : "AVAILABLE");
         }
 
-        if (tool.getRentalPoint() != null) {
-            dto.setRentalPointId(tool.getRentalPoint().getId());
-            dto.setRentalPointName(tool.getRentalPoint().getName());
-        }
-
-        if (tool.getTemplate() != null) {
+        if (t.getTemplate() != null) {
+            dto.setName(t.getTemplate().getName());
+            dto.setDeposit(t.getTemplate().getDepositAmount());
+            dto.setDailyPrice(t.getTemplate().getDailyRentalPrice());
+            
             ToolTemplateDto templateDto = new ToolTemplateDto();
-            templateDto.setId(tool.getTemplate().getId());
-            templateDto.setName(tool.getTemplate().getName());
+            templateDto.setId(t.getTemplate().getId());
+            templateDto.setName(t.getTemplate().getName());
             dto.setTemplate(templateDto);
-        }
 
-        // Атрибуты
-        if (tool.getAttributes() != null && !tool.getAttributes().isEmpty()) {
-            dto.setAttributes(tool.getAttributes().stream()
-                    .map(attr -> new ToolAttributeDto(attr.getId(), attr.getName(), attr.getValue()))
-                    .collect(Collectors.toList()));
-        } else {
-            dto.setAttributes(new ArrayList<>());
+            if (t.getTemplate().getCategory() != null) {
+                dto.setCategoryId(t.getTemplate().getCategory().getId());
+                dto.setCategoryName(t.getTemplate().getCategory().getName());
+            }
         }
-
-        // Изображения
-        if (tool.getImages() != null && !tool.getImages().isEmpty()) {
-            dto.setImages(tool.getImages().stream()
-                    .map(img -> new ToolImageDto(img.getId(), img.getFileName(), img.getContentType()))
-                    .collect(Collectors.toList()));
-        } else {
-            dto.setImages(new ArrayList<>());
-        }
-
         return dto;
     }
 }
-

@@ -10,7 +10,7 @@ import org.misha.authservice.mapper.ClientMapper;
 import org.misha.authservice.repository.ClientRepository;
 import org.misha.authservice.repository.RentalDocumentRepository;
 import org.misha.authservice.repository.ToolCategoryRepository;
-import org.misha.authservice.repository.ToolRepository;
+import org.misha.authservice.repository.ToolInstanceRepository;
 import org.misha.authservice.repository.ToolTemplateRepository;
 import org.misha.authservice.dto.CategoryDto;
 import org.misha.authservice.dto.TemplateDto;
@@ -33,7 +33,7 @@ public class SyncService {
     private final ContractService contractService;
     private final RentalDocumentRepository documentRepository;
     private final ClientRepository clientRepository;
-    private final ToolRepository toolRepository;
+    private final ToolInstanceRepository ToolInstanceRepository;
     private final ToolCategoryRepository categoryRepository;
     private final ToolTemplateRepository templateRepository;
     private final ClientMapper clientMapper;
@@ -116,7 +116,7 @@ public class SyncService {
                 .map(clientMapper::toDto)
                 .toList();
 
-        var tools = toolRepository.findByUpdatedAtAfter(since).stream()
+        var tools = ToolInstanceRepository.findByUpdatedAtAfter(since).stream()
                 .map(ToolDto::fromEntity)
                 .toList();
 
@@ -158,3 +158,4 @@ public class SyncService {
                 doc.getComment());
     }
 }
+
