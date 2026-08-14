@@ -62,6 +62,28 @@ public class ToolAvailabilityService {
         return getAvailableCount(templateId, startDate, endDate) > 0;
     }
 
+    @Transactional(readOnly = true)
+    public int getInstanceAvailableCount(Long toolInstanceId, LocalDateTime startDate, LocalDateTime endDate) {
+        ToolInstance toolInstance = toolInstanceRepository.findById(toolInstanceId)
+                .orElseThrow(() -> new AppException("INSTANCE_NOT_FOUND", "Instance not found: " + toolInstanceId, HttpStatus.NOT_FOUND));
+
+        if (toolInstance.getStatus() != ToolInstanceStatus.AVAILABLE) {
+            return 0;
+        }
+
+        int busyInRange = rentalDocumentRepository.countBusyToolsByInstanceAndDates(
+                toolInstanceId, startDate, endDate);
+        int bookedInRange = toolBookingRepository.countActiveBookingsByToolInstanceAndDates(
+                toolInstanceId, startDate, endDate);
+                
+        return (busyInRange == 0 && bookedInRange == 0) ? 1 : 0;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isInstanceAvailableForPeriod(Long toolInstanceId, LocalDateTime startDate, LocalDateTime endDate) {
+        return getInstanceAvailableCount(toolInstanceId, startDate, endDate) > 0;
+    }
+
     private void validateTemplate(UUID templateId) {
         templateRepository.findById(templateId)
                 .orElseThrow(() -> new AppException(

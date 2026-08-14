@@ -21,13 +21,19 @@ public class ToolBooking {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id", nullable = false)
-    private Client client;
+    @Column(name = "client_name", nullable = false)
+    private String clientName;
+
+    @Column(name = "client_phone")
+    private String clientPhone;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id", nullable = false)
     private ToolTemplate template;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tool_instance_id", nullable = false)
+    private ToolInstance toolInstance;
 
     @Column(name = "start_date_time", nullable = false)
     private LocalDateTime startDateTime;

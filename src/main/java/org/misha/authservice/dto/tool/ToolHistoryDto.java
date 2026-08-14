@@ -1,4 +1,4 @@
-package org.misha.authservice.dto.ToolInstance;
+package org.misha.authservice.dto.tool;
 
 import java.time.LocalDateTime;
 import lombok.Builder;

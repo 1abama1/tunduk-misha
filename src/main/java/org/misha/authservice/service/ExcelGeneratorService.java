@@ -61,6 +61,7 @@ public class ExcelGeneratorService {
             fillContractSheet(workbook, dto);
             fillToolPriceSheet(workbook, dto);
             fillActSheet(workbook, dto);
+            fillActPriemSheet(workbook, dto);
 
             // Заставляем Excel пересчитать формулы и обновить связи при открытии
             workbook.setForceFormulaRecalculation(true);
@@ -178,6 +179,34 @@ public class ExcelGeneratorService {
 
         // Формула расчёта L21 = G21 - F21
         setFormula(sheet, "L21", "G21-F21");
+
+        // N21 — Стоимость оборудования (purchasePrice)
+        if (dto.purchasePrice() != null) {
+            clear(sheet, "N21");
+            set(sheet, "N21", dto.purchasePrice());
+        }
+    }
+
+    // -------------------------------------------------------
+    // Лист: "Акт прием"
+    // -------------------------------------------------------
+
+    private void fillActPriemSheet(Workbook workbook, ExcelContractDto dto) {
+        Sheet sheet = workbook.getSheet("Акт прием");
+        if (sheet == null) sheet = workbook.getSheet("Акт приема");
+        if (sheet == null) sheet = workbook.getSheet("Акт прием-передач");
+        if (sheet == null) sheet = workbook.getSheet("Акт приема-передачи");
+        if (sheet == null) sheet = workbook.getSheet("Акт прием-передачи");
+        
+        if (sheet == null) {
+            return;
+        }
+
+        // N21 — Стоимость оборудования (purchasePrice)
+        if (dto.purchasePrice() != null) {
+            clear(sheet, "N21");
+            set(sheet, "N21", dto.purchasePrice());
+        }
     }
 
     // -------------------------------------------------------

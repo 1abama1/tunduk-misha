@@ -38,6 +38,11 @@ public class ToolTemplateController {
         return service.getFull(id);
     }
 
+    @PutMapping("/{id}")
+    public TemplateFullDto update(@PathVariable java.util.UUID id, @Valid @RequestBody org.misha.authservice.dto.UpdateTemplateRequest request) {
+        return service.update(id, request);
+    }
+
     /**
      * Проверяет доступность шаблона на указанный период.
      *
@@ -67,4 +72,4 @@ public class ToolTemplateController {
                 "count", count
         ));
     }
-}
+}

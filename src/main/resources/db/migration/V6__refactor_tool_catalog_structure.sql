@@ -84,7 +84,6 @@ ALTER TABLE tools
   DROP COLUMN IF EXISTS name,
   DROP COLUMN IF EXISTS article,
   DROP COLUMN IF EXISTS deposit,
-  DROP COLUMN IF EXISTS purchase_price,
   DROP COLUMN IF EXISTS daily_price,
   DROP COLUMN IF EXISTS serial_number,
   DROP COLUMN IF EXISTS status,

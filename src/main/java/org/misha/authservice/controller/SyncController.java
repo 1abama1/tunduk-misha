@@ -2,11 +2,14 @@ package org.misha.authservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.ContractSyncDto;
+import org.misha.authservice.dto.SyncPullResponse;
 import org.misha.authservice.service.SyncService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -21,8 +24,8 @@ public class SyncController {
         return ResponseEntity.ok(syncService.syncContracts(syncDto));
     }
 
-    @org.springframework.web.bind.annotation.GetMapping("/pull")
-    public ResponseEntity<org.misha.authservice.dto.SyncPullResponse> pullSync(@org.springframework.web.bind.annotation.RequestParam("since") long since) {
+    @GetMapping("/pull")
+    public ResponseEntity<SyncPullResponse> pullSync(@RequestParam("since") long since) {
         return ResponseEntity.ok(syncService.pullSync(since));
     }
 }

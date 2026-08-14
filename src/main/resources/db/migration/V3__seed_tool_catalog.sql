@@ -11,7 +11,8 @@ CREATE FUNCTION _v3_ins(
     p_cat_id    BIGINT,
     p_name      TEXT,
     p_daily     NUMERIC,
-    p_deposit   NUMERIC
+    p_deposit   NUMERIC,
+    p_price     NUMERIC
 ) RETURNS VOID LANGUAGE plpgsql AS $func$
 DECLARE
     v_tid  BIGINT;
@@ -38,7 +39,7 @@ BEGIN
         v_pfx || '-A' || v_seq,
         p_deposit,
         p_daily,
-        CASE WHEN p_deposit > 0 THEN p_deposit * 1.1 ELSE 0 END,
+        p_price,
         'AVAILABLE',
         v_tid,
         p_branch_id,
@@ -51,418 +52,387 @@ $func$;
 DO $do$
 DECLARE
     bid BIGINT;
-    cid BIGINT;
+    c_drill BIGINT;
+    c_demo BIGINT;
+    c_concrete BIGINT;
+    c_weld BIGINT;
+    c_garden BIGINT;
+    c_power BIGINT;
+    c_heat BIGINT;
+    c_gen BIGINT;
+    c_lift BIGINT;
+    c_comp BIGINT;
+    c_measure BIGINT;
+    c_scaffold BIGINT;
+    c_clean BIGINT;
+    c_machine BIGINT;
+    c_plumb BIGINT;
 BEGIN
     SELECT id INTO bid FROM branches ORDER BY id LIMIT 1;
 
-    -- 1. Алмазные установки и коронки
-    INSERT INTO tool_categories (name) VALUES ('Алмазные установки и коронки') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Алмазная установка (ручная)',              8000,  2000);
-    PERFORM _v3_ins(bid, cid, 'Алмазная установка (стандарт, комплект)',  8000, 45000);
-    PERFORM _v3_ins(bid, cid, 'Аренда алмазной коронки по кирпичу',       1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Алмазные коронки 40-63мм (за 1мм зуба)',   1000,  2500);
-    PERFORM _v3_ins(bid, cid, 'Алмазные коронки 76-100мм (за 1мм зуба)',  1000,  4000);
-    PERFORM _v3_ins(bid, cid, 'Алмазные коронки 102-120мм (за 1мм зуба)', 1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Алмазные коронки 150-200мм (за 1мм зуба)', 1000,  6000);
+    -- ==========================================
+    -- Создание категорий и вставка оборудования
+    -- ==========================================
 
-    -- 2. Сварочное оборудование
-    INSERT INTO tool_categories (name) VALUES ('Сварочное оборудование') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Аппарат для сварки пласт. труб HYNDAI',           1000,  4000);
-    PERFORM _v3_ins(bid, cid, 'Аппарат для сварки пласт. труб INGCO малый',      1000,  4000);
-    PERFORM _v3_ins(bid, cid, 'Аппарат для сварки пласт. труб Патриот большой',  1000,  6000);
-    PERFORM _v3_ins(bid, cid, 'Аппарат для сварки ПНД труб диам 180мм',          2000, 45000);
-    PERFORM _v3_ins(bid, cid, 'Аппарат для сварки ПНД труб диам 250мм (китай)',  5000, 75000);
-    PERFORM _v3_ins(bid, cid, 'Аппарат для сварки ПНД труб диам 250мм',          5000, 75000);
-    PERFORM _v3_ins(bid, cid, 'Сварка RILAND ARC 200 CT',                        1000, 11000);
-    PERFORM _v3_ins(bid, cid, 'Сварка CAMEO MMA 250',                            1000, 11000);
-    PERFORM _v3_ins(bid, cid, 'Сварка РЕОСТАТ черная 180А',                      1000, 11000);
-    PERFORM _v3_ins(bid, cid, 'Сварка TCH MMA 300А черный',                      1000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Сварка полуавтомат ROLF',                         2000, 28000);
-    PERFORM _v3_ins(bid, cid, 'Сварка полуавтомат Патриот',                      2000, 28000);
-    PERFORM _v3_ins(bid, cid, 'Сварка полуавтомат Bolian NBC-270s',               2000, 28000);
-    PERFORM _v3_ins(bid, cid, 'Сварка RILAND MMA 500G 380В 25кВт',               5000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Сварка RILAND MMA 500G 380В 25кВт PRO',           5000, 55000);
+    -- 1. Алмазное и буровое оборудование
+    INSERT INTO tool_categories (name) VALUES ('Алмазное и буровое оборудование') RETURNING id INTO c_drill;
+    PERFORM _v3_ins(bid, c_drill, 'Алмазная установка  (ручная установка)', 700.0, 2000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Алмазная установка (стандарт) (комплект)', 1500.0, 5000.0, 45000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Аренда алмазной коронки по кирпичу (зависит от диаметра)', 300.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Алмазные коронки от 40мм до 63мм', 300.0, 1000.0, 2500.0);
+    PERFORM _v3_ins(bid, c_drill, 'Алмазные коронки от 76мм до 100мм', 400.0, 1000.0, 4000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Алмазные коронки от 102мм до 120мм', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Алмазные коронки от 150мм до 200мм', 800.0, 1000.0, 6000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Буры SDS MAX с 10-18 мм', 300.0, 500.0, 1500.0);
+    PERFORM _v3_ins(bid, c_drill, 'Буры SDS MAX с 20-30 мм', 500.0, 2000.0, 4000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Буры SDS MAX с 32-40 мм', 800.0, 2000.0, 6500.0);
+    PERFORM _v3_ins(bid, c_drill, 'Буры на АНКОР', 300.0, 500.0, 1000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Бурмашинка электрическая', 500.0, 1000.0, 3000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор BODA (1,9 Дж)', 400.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор BOSCH (1,9 Дж)', 400.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор ROLF (1,9 Дж)', 400.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор аккамулят.MAKITA 1,9 Дж', 500.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор ANCHOR (9 Дж) квадратный бур', 700.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор BODA (9 Дж) квадратный бур', 700.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор CROWN (9 Дж)', 800.0, 2000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор KEN (9 Дж)', 800.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор  CROWN  (14 Дж) SDS MAX', 800.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор  KEN  (14 Дж) SDS MAX', 800.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор MAKITA 4001 (9,5 Дж) SDS MAX', 1000.0, 3000.0, 37000.0);
+    PERFORM _v3_ins(bid, c_drill, 'Перфоратор MAKITA 5201(19,7 Дж) SDS MAX', 1500.0, 4500.0, 48000.0);
 
-    -- 3. Асфальторезы
-    INSERT INTO tool_categories (name) VALUES ('Асфальторезы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Асфальторез WAKER NEUSON 300мм',  5000,  80000);
-    PERFORM _v3_ins(bid, cid, 'Асфальторез CUTTER 500мм',        5000,  80000);
-    PERFORM _v3_ins(bid, cid, 'Асфальторез LONCIN 500мм',        5000,  80000);
-    PERFORM _v3_ins(bid, cid, 'Асфальторез TOLSEN 500мм',        5000,  95000);
-    PERFORM _v3_ins(bid, cid, 'Асфальторез диск 500мм (за 1мм)', 1000,   6000);
+    -- 2. Демонтажное оборудование
+    INSERT INTO tool_categories (name) VALUES ('Демонтажное оборудование') RETURNING id INTO c_demo;
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник КИТАЙ Малые (ПРОФЕШ. РЕОСТАТ, ROLF и т.д.)', 900.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник КИТАЙ Малые НОВЫЕ', 1200.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник ROLF', 900.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник TEN', 900.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник PIT', 900.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник Профешинал', 1200.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник РЕОСТАТ 45 Дж', 1200.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник TOLSEN 7 кг', 1200.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник TOLSEN 11 кг', 1200.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник HOTECHE 11 кг', 1200.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник HOTECHE  15 кг', 1400.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник PIT 45 Дж большой', 1400.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник TOLSEN 23 кг 1600 W', 1400.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник TEN 60 Дж большой', 2000.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник INCCO 18 кг', 1400.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник HOTECHE  18 кг зеленый', 2000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник MAKITA HM1203C вес 9,7кг 25,5Дж', 2000.0, 5000.0, 41000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник MAKITA HM1317C вес 17кг 33,8 Дж', 2000.0, 5000.0, 63000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник TOLSEN 18 кг 60 ДЖ', 2000.0, 2000.0, 32000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник HILTI TE-1000', 2500.0, 5000.0, 90000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник BOSCH 16 вес 18кг 45 Дж', 2500.0, 5000.0, 90000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Отбойник BOSCH 27 вес 30 кг 63 Дж', 3000.0, 7000.0, 125000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Штроборез INGCO', 800.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Штроборез  HOTECHE ПРОФЕССИОНАЛ. 156 мм', 1000.0, 2000.0, 17000.0);
+    PERFORM _v3_ins(bid, c_demo, 'Кувалда', 500.0, 500.0, 2500.0);
 
-    -- 4. Мотоблоки
-    INSERT INTO tool_categories (name) VALUES ('Мотоблоки') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Набор для окучивания (мотоблок)',  1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Бензиновый мотоблок SHINEREAY',   4000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Бензиновый мотоблок Калуга',      4000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Бензиновый мотоблок Победа',      4000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Бензиновый мотоблок Урал',        4000, 50000);
+    -- 3. Бетонное и дорожное оборудование
+    INSERT INTO tool_categories (name) VALUES ('Бетонное и дорожное оборудование') RETURNING id INTO c_concrete;
+    PERFORM _v3_ins(bid, c_concrete, 'Асфальторез Бензиновый  WAKER NEUSON 300 мм', 3000.0, 5000.0, 80000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Асфальторез Бензиновый CUTTER 500 мм', 3000.0, 5000.0, 80000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Асфальторез Бензиновый LONCIN 500 мм', 3000.0, 5000.0, 80000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Асфальторез Бензиновый TOLSEN 500 мм', 3000.0, 5000.0, 95000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Асфальторез диск 500 мм', 600.0, 1000.0, 6000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Бетономешалка 220 литров', 800.0, 4000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Вибратор 1,0м 1,5метра', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Вибратор глубинный  6 метров', 1000.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Вибратор глубинный 3м или 4м', 1000.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Вибратор Чемпион 4м', 1000.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Вибробулова 1,5 м стоимость оборудования', 0, 0, 2500.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Вибробулова 4,0 м стоимость оборудования', 0, 0, 5500.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Вибробулова 6,0 м стоимость оборудования', 0, 0, 6500.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Виброрейка бензиновая 2 м', 2500.0, 4000.0, 38000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Стенорезная машина ручная 400 мм глубина реза 14см', 3000.0, 5000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Строгательная Машина СО 306', 2500.0, 5000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Электр.1 фазная (сдача мин 2часа)', 1700.0, 3000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Электр.3 фазная (сдача мин 2часа)', 1700.0, 3000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Электр.1 фазная большая', 2000.0, 3000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Бензин. (сдача мин 2часа)', 3000.0, 5000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Бензин. Кузнечик ПИШПЕК (мин сутки)', 3000.0, 5000.0, 100000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Площадочная (сдача мин 2часа) Электро', 1700.0, 3000.0, 32000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Площадочная (сдача мин 2часа)', 2400.0, 3000.0, 32000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Площадочная (сдача мин 2часа) ELITECH', 3000.0, 5000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Площадочная Оранжевая', 3000.0, 3000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Трамбовка Площадочная TOLSEN Большая 125 кг', 3500.0, 5000.0, 93840.0);
+    PERFORM _v3_ins(bid, c_concrete, 'Хопер ковш', 500.0, 1000.0, 4000.0);
 
-    -- 5. Бетономешалки и миксеры
-    INSERT INTO tool_categories (name) VALUES ('Бетономешалки и миксеры') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Бетономешалка 220 литров', 4000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Миксер BODA',              1000,  5500);
+    -- 4. Сварочное и плазменное оборудование
+    INSERT INTO tool_categories (name) VALUES ('Сварочное оборудование') RETURNING id INTO c_weld;
+    PERFORM _v3_ins(bid, c_weld, 'Аппарат для сварки пласт. труб HYNDAI', 500.0, 1000.0, 4000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Аппарат для сварки пласт. труб INGCO малый', 500.0, 1000.0, 4000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Аппарат для сварки пласт. труб Патриот бол.', 500.0, 1000.0, 6000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Аппарат для сварки ПНД труб диам 180 мм', 1000.0, 2000.0, 45000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Аппарат для сварки ПНД труб диам 250 мм (китай)', 2000.0, 5000.0, 75000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Аппарат для сварки ПНД труб диам 250 мм', 2000.0, 5000.0, 75000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Плазморез 160 А 380 В до 55 мм LGK ABM PROFESSIONAL', 1500.0, 5000.0, 90000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Плазморез 130 А 380 В до 55 мм LGK', 1500.0, 5000.0, 75000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Плазморез 120 А 380 В до 45 мм LGK', 1500.0, 5000.0, 60000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Плазморез 100 А 380 В до 35 мм RILAND', 1500.0, 5000.0, 75000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Плазморез 40 А 220 В до 10 мм', 800.0, 2000.0, 17000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Плазморез насадки для плазмореза (по 100сом)', 400.0, 0, 0);
+    PERFORM _v3_ins(bid, c_weld, 'Плазморез насадки для плазмореза (по 200сом)', 600.0, 0, 0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка RILAND ARC 200 CT', 500.0, 1000.0, 11000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка CAMEO MMA 250', 500.0, 1000.0, 11000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка РЕОСТАТ черная 180 А', 500.0, 1000.0, 11000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка TCH MMA 300 А черный', 500.0, 1000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка полуавтомат ROLF', 800.0, 2000.0, 28000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка полуавтомат Патриот', 800.0, 2000.0, 28000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка полуавтомат Bolian NBC-270s', 1000.0, 2000.0, 28000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка RILAND MMA 500G 380В 25кВт 40В', 1000.0, 5000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Сварка RILAND MMA 500G 380В 25кВт 40В PRO', 1500.0, 5000.0, 55000.0);
+    PERFORM _v3_ins(bid, c_weld, 'Горелка газовая большая (комплект с балон)', 500.0, 1000.0, 8700.0);
+    PERFORM _v3_ins(bid, c_weld, 'Горелка газовая малая (комплект с балон)', 500.0, 1000.0, 8700.0);
+    PERFORM _v3_ins(bid, c_weld, 'Паяльная лампа', 500.0, 1000.0, 2000.0);
 
-    -- 6. Болгарки (УШМ)
-    INSERT INTO tool_categories (name) VALUES ('Болгарки (УШМ)') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Болгарка SAFUN 125',        1000, 8000);
-    PERFORM _v3_ins(bid, cid, 'Болгарка TENIR аккум. 125', 1000, 8000);
-    PERFORM _v3_ins(bid, cid, 'Болгарка ATEK 180',         1000, 5000);
-    PERFORM _v3_ins(bid, cid, 'Болгарка SAFUN 230',        1000, 8000);
+    -- 5. Садовая техника и оборудование
+    INSERT INTO tool_categories (name) VALUES ('Садовая техника') RETURNING id INTO c_garden;
+    PERFORM _v3_ins(bid, c_garden, 'Бенз. Мотоблок Набор для окучивания', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Бензиновый мотоблок SHINEREAY', 1500.0, 4000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Бензиновый мотоблок Калуга', 1500.0, 4000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Бензиновый мотоблок Победа', 1500.0, 4000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Бензиновый мотоблок Урал', 1500.0, 4000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Воздуходувка', 500.0, 1000.0, 4500.0);
+    PERFORM _v3_ins(bid, c_garden, 'Воздуходувка ранцевая бензиновая TOLSEN', 1000.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Воздуходувка ранцевая бензиновая 4-х тактная', 1000.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Газонокосилка бенз. 4 тактный триммер', 800.0, 2000.0, 11000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Газонокосилка электр.триммер ПРОРАБ', 800.0, 2000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Газонокосилка электр.YWTT', 800.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Газонокосилка электр.INGCO', 800.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Кусторез STIHL', 1000.0, 2000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Мотобур Патриот 4-х тактный', 1500.0, 4000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Мотобур Патриот двуручный', 1500.0, 4000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Мотобур Патриот одноручный', 1500.0, 4000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Пила ЦЕПНАЯ Бензо STIHL 260', 1500.0, 5000.0, 49000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Пила ЦЕПНАЯ Бензо STIHL 382', 1500.0, 5000.0, 56000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Пила ЦЕПНАЯ Бензо STIHL 382 оригинал цепь', 2000.0, 5000.0, 56000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Пила ЦЕПНАЯ Электр. КИТАЙ', 800.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Каток садовый', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Скарификатор+ аэратор  HOTECHE', 1500.0, 2000.0, 11000.0);
+    PERFORM _v3_ins(bid, c_garden, 'Формы для садовой дорожки', 100.0, 1000.0, 1500.0);
 
-    -- 7. Буры и сверла
-    INSERT INTO tool_categories (name) VALUES ('Буры и сверла') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Буры SDS MAX 10-18мм',  500,  1500);
-    PERFORM _v3_ins(bid, cid, 'Буры SDS MAX 20-30мм', 2000,  4000);
-    PERFORM _v3_ins(bid, cid, 'Буры SDS MAX 32-40мм', 2000,  6500);
-    PERFORM _v3_ins(bid, cid, 'Буры на АНКОР',          500,  1000);
+    -- 6. Электроинструмент
+    INSERT INTO tool_categories (name) VALUES ('Электроинструмент') RETURNING id INTO c_power;
+    PERFORM _v3_ins(bid, c_power, 'Болгарка (УШМ) SAFUN 125', 500.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_power, 'Болгарка (УШМ) TENIR аккамуляторная 125', 500.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_power, 'Болгарка (УШМ) ATEK  180', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_power, 'Болгарка (УШМ) SAFUN 230', 600.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_power, 'Возвратно поступ. пила Пилка по дереву', 350.0, 0, 0);
+    PERFORM _v3_ins(bid, c_power, 'Возвратно поступательная пила (Сабельная пила)', 800.0, 1000.0, 9000.0);
+    PERFORM _v3_ins(bid, c_power, 'Гайковерт', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_power, 'Лобзик Электр.', 400.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_power, 'Миксер  BODA', 500.0, 1000.0, 5500.0);
+    PERFORM _v3_ins(bid, c_power, 'Оберфрейзер 12мм цанга', 800.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила (пчелка) 110мм', 400.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила ДИСК по алюминию (диск 100$)', 300.0, 1000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила отрезная по металу BOSCH', 800.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила отрезная по металу KEN', 800.0, 2000.0, 8500.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила отрезная по металу TOLSEN', 800.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) KEHANG корич.', 500.0, 1000.0, 6500.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торц.(углорез)INCCO малый асинхроник', 500.0, 1000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) BODA 255', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) EBI MAX 255', 500.0, 1000.0, 10000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) LANZAN 255', 500.0, 1000.0, 10000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) ROLF 255', 500.0, 1000.0, 10000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) SUZUKI 255', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) WUJIE красный', 500.0, 1000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез по алюминию)', 800.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) SUZUKI 255 рельсовый', 800.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) MAKITA LN1040F', 800.0, 2000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез)INCCO большой', 1000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) Metabo 305 рельсовый', 1000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) ALEM 305', 1000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) BODA 355', 1000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила торцовочная(углорез) HOTECHE 305 рельсовый', 1000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_power, 'Пила Циркулярная KEN  HEANG (190мм.)', 500.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_power, 'Реноватор', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_power, 'Фен строительный  TOLSEN 600 град', 300.0, 1000.0, 4800.0);
+    PERFORM _v3_ins(bid, c_power, 'Фен строительный BOSCH 600 град', 300.0, 1000.0, 4800.0);
+    PERFORM _v3_ins(bid, c_power, 'Полировачная машинка', 500.0, 1000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф Машинка эксцентриковая 120 мм', 500.0, 1000.0, 4000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф. Машинка (ручная) TOLSEN плоскошлифовальная', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф. Машинка вибрационная  (ручная)MAKITA', 500.0, 1000.0, 800.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф.машинка (ручная)BODA', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф.машинка Пит (дерево)', 800.0, 1000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф.машинка (шпаклевка) Жираф', 1000.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф.машинка (шпаклевка) Жираф TOLSEN', 1500.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф.машинка (шпаклевка) Жираф бесщеточный', 1500.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф.машинка (дерево)пол СО-206', 2000.0, 5000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шлиф. Машинка (дерево)пол СО-401', 1500.0, 5000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шуруповерт Фенг Бао (набор) 13 патрон', 500.0, 1000.0, 10000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шуруповерт BOSCH  (набор)', 500.0, 1000.0, 10000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шуруповерт JIONGJIE  (набор)', 500.0, 1000.0, 10000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шуруповерт MAKITA 456(набор)', 800.0, 2000.0, 36000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шуруповерт MAKONA  (набор)', 500.0, 1000.0, 10000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шуруповерт-дрель INCCO 16 патрон', 500.0, 1000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_power, 'Шуруповерт-дрель Агресс', 500.0, 1000.0, 5000.0);
 
-    -- 8. Вибраторы
-    INSERT INTO tool_categories (name) VALUES ('Вибраторы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Вибратор 1.0-1.5м',        1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Вибратор глубинный 6м',    2000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Вибратор глубинный 3-4м',  2000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Вибратор Чемпион 4м',      2000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Вибробулова 1.5м',            0,  2500);
-    PERFORM _v3_ins(bid, cid, 'Вибробулова 4.0м',            0,  5500);
-    PERFORM _v3_ins(bid, cid, 'Вибробулова 6.0м',            0,  6500);
-    PERFORM _v3_ins(bid, cid, 'Виброрейка бензиновая 2м',  4000, 38000);
+    -- 7. Тепловое и климатическое оборудование
+    INSERT INTO tool_categories (name) VALUES ('Тепловое и климатическое оборудование') RETURNING id INTO c_heat;
+    PERFORM _v3_ins(bid, c_heat, 'Газовая пушка ROLF только для натяжных (1 кг\час)', 500.0, 1000.0, 10000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Газовая пушка TYQ 15кВт (1 кг\час) Голубая', 800.0, 4000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Газовая пушка TYQ 30кВт (1 кг\час) Голубая', 800.0, 4000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Газ. пушка ПрофТепло 30 кВт (1,5-3кг\час)', 800.0, 4000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Газовая пушка ПрофТепло 57кВт (2,9-4,1 кг)', 1000.0, 4000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Газовая пушка ПрофТепло 81 кВт (3,9-5,9 кг)', 1500.0, 4000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Диз. Тепл. пушка 13 кВТ (2,51л\час) бак 18 л', 1000.0, 4000.0, 20352.0);
+    PERFORM _v3_ins(bid, c_heat, 'Диз. Тепл. пушка 30 кВТ (2,51л\час) бак 18 л', 1000.0, 4000.0, 20352.0);
+    PERFORM _v3_ins(bid, c_heat, 'Диз. Тепл. пушка 30 кВТ (2,51л\час) бак 18,5л', 1000.0, 4000.0, 20352.0);
+    PERFORM _v3_ins(bid, c_heat, 'Диз. Тепл. пушка 40 кВТ (3,9л\час) бак 26л', 1000.0, 4000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Диз. Тепл. пушка 43 кВТ ( 4,0л\час) бак 55,5', 1500.0, 4000.0, 25500.0);
+    PERFORM _v3_ins(bid, c_heat, 'Диз. Тепл. пушка 65 кВТ (5,95л\час) бак 55,5л', 2000.0, 4000.0, 45000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Электротепловентиляторы ( 1 фазный) 3кВт', 300.0, 1000.0, 4000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Электротепловентиляторы ( 3 фазный) 11кВт', 600.0, 2000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Газовый инфракрасный обогреватель', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Газовый баллон (без пушки или с горелкой)', 300.0, 1000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_heat, 'Осушитель воздуха YAKE', 1500.0, 5000.0, 70000.0);
 
-    -- 9. Пилы
-    INSERT INTO tool_categories (name) VALUES ('Пилы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Возвратно-поступательная пила Сабельная',   1000,  9000);
-    PERFORM _v3_ins(bid, cid, 'Пила пчелка 110мм',                         1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Пила диск по алюминию',                     1000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Пила отрезная по металлу BOSCH',            2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Пила отрезная по металлу KEN',              2000,  8500);
-    PERFORM _v3_ins(bid, cid, 'Пила отрезная по металлу TOLSEN',           2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная KEHANG 255',               1000,  6500);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная INCCO малый асинхроник',   1000, 20000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная BODA 255',                 1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная EBI MAX 255',              1000, 10000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная LANZAN 255',               1000, 10000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная ROLF 255',                 1000, 10000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная SUZUKI 255',               1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная WUJIE красный',            1000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная по алюминию',              2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная SUZUKI 255 рельсовый',     2000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная MAKITA LN1040F',           2000, 35000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная INCCO большой',            2000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная Metabo 305 рельсовый',     2000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная ALEM 305',                 2000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная BODA 355',                 2000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная HOTECHE 305 рельсовый',    2000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Пила торцовочная Озчелик BETA плюс',        4000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Пила цепная STIHL 260',                     5000, 49000);
-    PERFORM _v3_ins(bid, cid, 'Пила цепная STIHL 382',                     5000, 56000);
-    PERFORM _v3_ins(bid, cid, 'Пила цепная STIHL 382 оригинальная цепь',   5000, 56000);
-    PERFORM _v3_ins(bid, cid, 'Пила цепная электр. Китай',                 1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Пила циркулярная KEN HEANG 190мм',          1000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Лобзик электрический',                      1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Камнерезный станок',                        4000, 60000);
+    -- 8. Генераторы и электропитание
+    INSERT INTO tool_categories (name) VALUES ('Генераторы и электропитание') RETURNING id INTO c_gen;
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 3,0 TOLSEN', 1300.0, 4000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 3,0 KEMAGE', 1300.0, 4000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 3,5', 1300.0, 4000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 3,5 HONDA', 1300.0, 4000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 5,5 KEMAGE', 1600.0, 5000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 7,0 KEMAGE', 2100.0, 5000.0, 55000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 8.0 TOLSEN', 2100.0, 5000.0, 65000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 8,5 KEMAGE', 2500.0, 5000.0, 65000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 3Ф 7,0 JL 9000 STILWELL', 2100.0, 5000.0, 70000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Генератор 3Ф 8,5 Kipor', 3000.0, 5000.0, 150000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Удлинители электрические 1 Ф 20 м.пог', 200.0, 500.0, 3000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Удлинители электрические 1 Ф 30 м.пог', 300.0, 500.0, 3000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Удлинители электрические 1 Ф 50 м.пог', 400.0, 500.0, 5000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Удлинители электрические 3 Ф 17 М.пог. 5х6 мм.кв 63 А', 500.0, 2000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_gen, 'Удлинители электрические 3 Ф 24 м.пог на пушки', 500.0, 2000.0, 8000.0);
 
-    -- 10. Воздуходувки
-    INSERT INTO tool_categories (name) VALUES ('Воздуходувки') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Воздуходувка электрическая',                    1000,  4500);
-    PERFORM _v3_ins(bid, cid, 'Воздуходувка ранцевая бензиновая TOLSEN',       2000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Воздуходувка ранцевая бензиновая 4-х тактная',  2000, 25000);
+    -- 9. Подъемное и складское оборудование
+    INSERT INTO tool_categories (name) VALUES ('Подъемное и складское оборудование') RETURNING id INTO c_lift;
+    PERFORM _v3_ins(bid, c_lift, 'Домкрат 20 тонн', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_lift, 'Домкрат 32 тонн', 500.0, 1000.0, 8500.0);
+    PERFORM _v3_ins(bid, c_lift, 'Домкрат 50 тонн', 500.0, 1000.0, 8500.0);
+    PERFORM _v3_ins(bid, c_lift, 'Козловой подьемник', 2000.0, 5000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_lift, 'Козловой подъемник +тележка+таль', 2500.0, 5000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_lift, 'Рохля 2500 кг', 1500.0, 4000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_lift, 'Таль 1,5т, 3м', 800.0, 1000.0, 9000.0);
+    PERFORM _v3_ins(bid, c_lift, 'Тельфер 300-600 кг', 1000.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_lift, 'Тельфер 400-800 кг', 1000.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_lift, 'Тачки', 500.0, 1000.0, 6500.0);
+    PERFORM _v3_ins(bid, c_lift, 'Присоска аккумуляторная 150 кг', 500.0, 1000.0, 5000.0);
 
-    -- 11. Газовые пушки и обогреватели
-    INSERT INTO tool_categories (name) VALUES ('Газовые пушки и обогреватели') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Газовая пушка ROLF натяжные потолки',           1000, 10000);
-    PERFORM _v3_ins(bid, cid, 'Газовая пушка TYQ 15кВт',                       4000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Газовая пушка TYQ 30кВт',                       4000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Газовая пушка ПрофТепло 30кВт',                 4000, 20000);
-    PERFORM _v3_ins(bid, cid, 'Газовая пушка ПрофТепло 57кВт',                 4000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Газовая пушка ПрофТепло 81кВт',                 4000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Газовый баллон без пушки или с горелкой',       1000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Газовый инфракрасный обогреватель',             1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Горелка газовая большая комплект с баллоном',   1000,  8700);
-    PERFORM _v3_ins(bid, cid, 'Горелка газовая малая комплект с баллоном',     1000,  8700);
-    PERFORM _v3_ins(bid, cid, 'Электротепловентилятор 1-фазный 3кВт',          1000,  4000);
-    PERFORM _v3_ins(bid, cid, 'Электротепловентилятор 3-фазный 11кВт',         2000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Осушитель воздуха YAKE 80кв.м.',                5000, 70000);
+    -- 10. Компрессорное и покрасочное оборудование
+    INSERT INTO tool_categories (name) VALUES ('Компрессорное и покрасочное оборудование') RETURNING id INTO c_comp;
+    PERFORM _v3_ins(bid, c_comp, 'Компрессор 50л.', 500.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Компрессор 50л. медицинский тихий', 800.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Компрессор 80л.двухпоршневой', 1000.0, 4000.0, 40000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Компрессор MZB VA 70л.двухпоршневой', 1000.0, 4000.0, 40000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Компрессор 90л.трехпоршневой 10 АТМ', 1300.0, 4000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Компрессор 90л.трехпоршневой 10 АТМ бензиновый', 1600.0, 4000.0, 50000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Краскопульт (ручной для извести и опрыск.)', 1000.0, 3000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Краскопульт безвоздушный JSPERFECT', 2000.0, 5000.0, 60000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Краскопульт безвоздушный PROFESSIONAL SPRAY', 2000.0, 5000.0, 60000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Краскопульт безвоздушный JSPERFECT (для эмали)', 2000.0, 5000.0, 60000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Краскопульт безвоздушный мембранный', 1500.0, 5000.0, 40000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет для нанесения антикоррозийной обработки', 300.0, 1000.0, 4500.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет пневмо гвоздезабивной большой', 500.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет пневмо гвоздезабивной малый', 300.0, 1000.0, 4500.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет пневмо скобозабивной большой', 500.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет пневмо скобозабивной малый', 300.0, 1000.0, 4500.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет Покрасочный', 200.0, 500.0, 1000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет Покрасочный (полу-профессиональный)', 300.0, 500.0, 1000.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет Покрасочный (профессиональный)', 300.0, 500.0, 2500.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет Покрасочный большой водоэмульсия', 500.0, 500.0, 2500.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет продувочный', 200.0, 500.0, 4500.0);
+    PERFORM _v3_ins(bid, c_comp, 'Пистолет Текстурный', 300.0, 500.0, 3500.0);
+    PERFORM _v3_ins(bid, c_comp, 'Заклепачник пневматический', 500.0, 1000.0, 9500.0);
+    PERFORM _v3_ins(bid, c_comp, 'Набор пневмоинструмента', 500.0, 1000.0, 4000.0);
 
-    -- 12. Дизельные тепловые пушки
-    INSERT INTO tool_categories (name) VALUES ('Дизельные тепловые пушки') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Диз. тепловая пушка 13кВт бак 18л',    4000, 20352);
-    PERFORM _v3_ins(bid, cid, 'Диз. тепловая пушка 30кВт бак 18л',    4000, 20352);
-    PERFORM _v3_ins(bid, cid, 'Диз. тепловая пушка 30кВт бак 18.5л',  4000, 20352);
-    PERFORM _v3_ins(bid, cid, 'Диз. тепловая пушка 40кВт бак 26л',    4000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Диз. тепловая пушка 43кВт бак 55.5л',  4000, 25500);
-    PERFORM _v3_ins(bid, cid, 'Диз. тепловая пушка 65кВт бак 55.5л',  4000, 45000);
+    -- 11. Измерительная техника
+    INSERT INTO tool_categories (name) VALUES ('Измерительная техника') RETURNING id INTO c_measure;
+    PERFORM _v3_ins(bid, c_measure, 'Детектор скрытой проводки', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Детектор скрытой проводки АДА', 500.0, 1000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Динам.метр ключ 1\2, 40-210Hm, 460 мм TOLSEN', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Динам.метр ключ 1\4, 5-25Hm, 460 мм HOTECHE', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Динам.метр ключ 3/8, 19-110Hm, 365мм FORCE', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Лазерная рулетка HILTI PD 38', 500.0, 2000.0, 38000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Лазерный нивелир зеленый 360', 500.0, 1000.0, 5500.0);
+    PERFORM _v3_ins(bid, c_measure, 'Лазерный термометр пирометр', 300.0, 1000.0, 1500.0);
+    PERFORM _v3_ins(bid, c_measure, 'Мегометр', 500.0, 1000.0, 2000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Нивелир ADA (оптический)', 600.0, 2000.0, 36000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Нивелир Spectra AL-20 (оптический)', 600.0, 2000.0, 28000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Нивелир АТ-32 (оптический)', 600.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Тепловизор ADA', 1000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Тепловизор UNI-T PRO UTi260B Professional', 1000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_measure, 'Уровни STABILA', 500.0, 1000.0, 8000.0);
 
-    -- 13. Газонокосилки и триммеры
-    INSERT INTO tool_categories (name) VALUES ('Газонокосилки и триммеры') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Газонокосилка бенз. 4-тактный триммер', 2000, 11000);
-    PERFORM _v3_ins(bid, cid, 'Газонокосилка электр. ПРОРАБ',          2000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Газонокосилка электр. YWTT',            2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Газонокосилка электр. INGCO',           2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Кусторез STIHL',                        2000, 35000);
-    PERFORM _v3_ins(bid, cid, 'Скарификатор аэратор HOTECHE',          2000, 11000);
+    -- 12. Леса, лестницы и высотное оборудование
+    INSERT INTO tool_categories (name) VALUES ('Леса и лестницы') RETURNING id INTO c_scaffold;
+    PERFORM _v3_ins(bid, c_scaffold, 'Леса строительные (одна секция)', 100.0, 500.0, 6500.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Колеса на леса большие за 1 шт', 75.0, 500.0, 1750.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Колеса на леса маленькие за 1 шт', 75.0, 500.0, 1750.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Комплект колес на леса 4 колеса', 300.0, 4000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Лестница  трансформер 3,55 м.пог', 500.0, 1000.0, 11000.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Лестница  трансформер 4,65 м.пог', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Лестница  трансформер 6,0 м.пог', 800.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Лестница стремянка 3,6 м', 500.0, 1000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Лестница телескопическая 4,4 м.пог', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Стремянки с широкими ножками', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_scaffold, 'Ходули', 1000.0, 2000.0, 35000.0);
 
-    -- 14. Генераторы
-    INSERT INTO tool_categories (name) VALUES ('Генераторы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Генератор 3.0 TOLSEN',       4000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 3.0 KEMAGE',       4000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 3.5',              4000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 3.5 HONDA',        4000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 5.5 KEMAGE',       5000,  50000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 7.0 KEMAGE',       5000,  55000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 8.0 TOLSEN',       5000,  65000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 8.5 KEMAGE',       5000,  65000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 3Ф 7.0 STILWELL',  5000,  70000);
-    PERFORM _v3_ins(bid, cid, 'Генератор 3Ф 8.5 Kipor',     5000, 150000);
+    -- 13. Клининговое оборудование
+    INSERT INTO tool_categories (name) VALUES ('Клининговое оборудование') RETURNING id INTO c_clean;
+    PERFORM _v3_ins(bid, c_clean, 'Мойка китай 200 бар', 1000.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_clean, 'Пароотчиститель Karcher SC 4', 1000.0, 2000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_clean, 'Пылесос  моющий Karcher Puzzi 10\1', 1500.0, 2000.0, 130000.0);
+    PERFORM _v3_ins(bid, c_clean, 'Пылесос  моющий Karcher Puzzi 8\1', 1200.0, 2000.0, 80000.0);
+    PERFORM _v3_ins(bid, c_clean, 'Пылесос моющий Karcher SE 6.100', 1200.0, 2000.0, 35000.0);
+    PERFORM _v3_ins(bid, c_clean, 'Пылесос строит.HOTECHE (болш.) 75 литров', 800.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_clean, 'Пылесос строит.INCCO(болш.) 75 литров', 800.0, 2000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_clean, 'Пылесос строит.китай (мал.)', 500.0, 1000.0, 10000.0);
 
-    -- 15. Компрессоры
-    INSERT INTO tool_categories (name) VALUES ('Компрессоры') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Компрессор 50л',                          2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Компрессор 50л медицинский тихий',        2000, 20000);
-    PERFORM _v3_ins(bid, cid, 'Компрессор 80л двухпоршневой',            4000, 40000);
-    PERFORM _v3_ins(bid, cid, 'Компрессор MZB VA 70л двухпоршневой',     4000, 40000);
-    PERFORM _v3_ins(bid, cid, 'Компрессор 90л трехпоршневой 10АТМ',      4000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Компрессор 90л трехпоршневой 10АТМ бенз.',4000, 50000);
+    -- 14. Станки и плиткорезы
+    INSERT INTO tool_categories (name) VALUES ('Станки и плиткорезы') RETURNING id INTO c_machine;
+    PERFORM _v3_ins(bid, c_machine, 'Камнерезный станок', 1500.0, 4000.0, 60000.0);
+    PERFORM _v3_ins(bid, c_machine, 'Кафельный станок ручной 60 см', 500.0, 1000.0, 7000.0);
+    PERFORM _v3_ins(bid, c_machine, 'Кафельный станок ручной 120 см', 800.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_machine, 'Кафельный станок 100 см ИТАЛИЯ', 1000.0, 4000.0, 65000.0);
+    PERFORM _v3_ins(bid, c_machine, 'Станок БЕЛМАШ УНИВЕРСАЛ 2000Е', 800.0, 2000.0, 20000.0);
+    PERFORM _v3_ins(bid, c_machine, 'Станок для гибки арматуры до 12мм', 100.0, 500.0, 2000.0);
+    PERFORM _v3_ins(bid, c_machine, 'Станок комбинированный JET JKM 300', 1000.0, 2000.0, 65000.0);
+    PERFORM _v3_ins(bid, c_machine, 'Сверлильный станок', 1000.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_machine, 'Пила торцовочная(углорез)Озчелик BETA +', 1000.0, 4000.0, 50000.0);
 
-    -- 16. Краскопульты
-    INSERT INTO tool_categories (name) VALUES ('Краскопульты') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Краскопульт ручной известь опрыск.',  3000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Краскопульт безвоздушный JSPERFECT',  5000, 60000);
-    PERFORM _v3_ins(bid, cid, 'Краскопульт безвоздушный PROFESSIONAL SPRAY', 5000, 60000);
-    PERFORM _v3_ins(bid, cid, 'Краскопульт безвоздушный для эмали',  5000, 60000);
-    PERFORM _v3_ins(bid, cid, 'Краскопульт безвоздушный мембранный', 5000, 40000);
-    PERFORM _v3_ins(bid, cid, 'Хопер ковш',                          1000,  4000);
+    -- 15. Сантехническое и ручное оборудование
+    INSERT INTO tool_categories (name) VALUES ('Сантехническое и ручное оборудование') RETURNING id INTO c_plumb;
+    PERFORM _v3_ins(bid, c_plumb, 'Выпрямитель проволки арматуры', 1500.0, 4000.0, 40000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Газовый ключ', 500.0, 1000.0, 4000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Головки FORCE', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Кабелерез', 500.0, 1000.0, 2000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Ковролинорез', 500.0, 1000.0, 8500.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Кондуктор для врезки замков', 800.0, 1000.0, 8500.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Лерки сантехнические', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Мотопомпа (вода,грязь)', 1500.0, 4000.0, 30000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Набор для установки кондиционера', 500.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Набор Звездочек', 500.0, 1000.0, 12000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Насос для закачки систем отопления 1200 литр\Час', 500.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Насос погружной 250л \мин 50 диам', 500.0, 1000.0, 5000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Опресовщик (электрических кабелей)', 500.0, 1000.0, 9500.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Опресометр (сантехнический)', 500.0, 2000.0, 15000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Пресс гидравлический', 800.0, 1000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Рычажный трубогиб    6, 8, 10 мм', 400.0, 1000.0, 3000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Съемники гидравлический трехлапый', 800.0, 1000.0, 6000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Съемники подшибников внутренних набор', 500.0, 1000.0, 8000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Съемники подшибников трехлапые', 300.0, 500.0, 2000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Трос сантехнический', 500.0, 1000.0, 2000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Трубогиб квадрат 15х15 20х20 25х25 30х30 40х40х2', 800.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Трубогиб круглые трубы 15мм 20мм 25мм 30мм', 800.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Трубогиб круглый пруток до 16 мм', 800.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Трубогиб от 6 до 10 мм медь алюминий малый', 500.0, 1000.0, 1500.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Трубогиб от 6 до 22 мм медь алюминий большой', 800.0, 1000.0, 6500.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Трубогиб полоса 40х10мм', 800.0, 2000.0, 25000.0);
+    PERFORM _v3_ins(bid, c_plumb, 'Прожектор', 300.0, 1000.0, 2500.0);
 
-    -- 17. Пневматические пистолеты
-    INSERT INTO tool_categories (name) VALUES ('Пневматические пистолеты') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Пистолет пневмо гвоздезабивной большой',    1000, 8000);
-    PERFORM _v3_ins(bid, cid, 'Пистолет пневмо гвоздезабивной малый',      1000, 4500);
-    PERFORM _v3_ins(bid, cid, 'Пистолет пневмо скобозабивной большой',     1000, 8000);
-    PERFORM _v3_ins(bid, cid, 'Пистолет пневмо скобозабивной малый',       1000, 4500);
-    PERFORM _v3_ins(bid, cid, 'Пистолет покрасочный',                       500, 1000);
-    PERFORM _v3_ins(bid, cid, 'Пистолет покрасочный полупрофессиональный',  500, 1000);
-    PERFORM _v3_ins(bid, cid, 'Пистолет покрасочный профессиональный',      500, 2500);
-    PERFORM _v3_ins(bid, cid, 'Пистолет покрасочный большой водоэмульсия',  500, 2500);
-    PERFORM _v3_ins(bid, cid, 'Пистолет продувочный',                       500, 4500);
-    PERFORM _v3_ins(bid, cid, 'Пистолет текстурный',                        500, 3500);
-    PERFORM _v3_ins(bid, cid, 'Набор пневмоинструмента',                   1000, 4000);
-    PERFORM _v3_ins(bid, cid, 'Заклепачник пневматический',                1000, 9500);
-    PERFORM _v3_ins(bid, cid, 'Пистолет для антикоррозийной обработки',    1000, 4500);
-
-    -- 18. Плазморезы
-    INSERT INTO tool_categories (name) VALUES ('Плазморезы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Плазморез LGK ABM 160А 380В до 55мм', 5000,  90000);
-    PERFORM _v3_ins(bid, cid, 'Плазморез LGK 130А 380В до 55мм',     5000,  75000);
-    PERFORM _v3_ins(bid, cid, 'Плазморез LGK 120А 380В до 45мм',     5000,  60000);
-    PERFORM _v3_ins(bid, cid, 'Плазморез RILAND 100А 380В до 35мм',  5000,  75000);
-    PERFORM _v3_ins(bid, cid, 'Плазморез 40А 220В до 10мм',          2000,  17000);
-    PERFORM _v3_ins(bid, cid, 'Насадки для плазмореза 1Ф комплект',     0,      0);
-    PERFORM _v3_ins(bid, cid, 'Насадки для плазмореза 3Ф RILAND',       0,      0);
-
-    -- 19. Отбойники
-    INSERT INTO tool_categories (name) VALUES ('Отбойники') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Отбойник КИТАЙ малый 250 тип',              2000,  12000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник КИТАЙ малый НОВЫЕ 250 тип',        2000,  12000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник ROLF 250 тип',                     2000,  12000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник TEN 250 тип',                      2000,  12000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник PIT 250 тип',                      2000,  12000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник Профессионал 250 тип',             2000,  12000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник РЕОСТАТ 45Дж 300 тип',            2000,  15000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник TOLSEN 7кг 300 тип',               2000,  15000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник TOLSEN 11кг 300 тип',              2000,  25000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник HOTECHE 11кг 300 тип',             2000,  25000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник HOTECHE 15кг 300 тип',             2000,  20000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник PIT 45Дж большой 300 тип',        2000,  20000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник TOLSEN 23кг 1600W 300 тип',        2000,  20000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник TEN 60Дж 350 тип',                2000,  20000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник INCCO 18кг 300 тип',               2000,  20000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник HOTECHE 18кг зеленый 350 тип',    2000,  30000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник MAKITA HM1203C 9.7кг 25.5Дж',     5000,  41000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник MAKITA HM1317C 17кг 33.8Дж',      5000,  63000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник TOLSEN 18кг 60Дж 350 тип',        2000,  32000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник HILTI TE-1000 500 тип',            5000,  90000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник BOSCH 16 18кг 45Дж 400 тип',      5000,  90000);
-    PERFORM _v3_ins(bid, cid, 'Отбойник BOSCH 27 30кг 63Дж 500 тип',      7000, 125000);
-
-    -- 20. Перфораторы
-    INSERT INTO tool_categories (name) VALUES ('Перфораторы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Перфоратор BODA 1.9Дж',                 1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор BOSCH 1.9Дж',                1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор ROLF 1.9Дж',                 1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор аккум. MAKITA 1.9Дж',        2000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор ANCHOR 9Дж квадр. бур',      1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор BODA 9Дж квадр. бур',        1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор CROWN 9Дж',                  2000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор KEN 9Дж',                    2000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор CROWN 14Дж SDS MAX',         2000, 20000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор KEN 14Дж SDS MAX',           2000, 20000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор MAKITA 4001 9.5Дж SDS MAX',  3000, 37000);
-    PERFORM _v3_ins(bid, cid, 'Перфоратор MAKITA 5201 19.7Дж SDS MAX', 4500, 48000);
-
-    -- 21. Шуруповерты и дрели
-    INSERT INTO tool_categories (name) VALUES ('Шуруповерты и дрели') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Шуруповерт Фенг Бао набор 13 патрон',  1000, 10000);
-    PERFORM _v3_ins(bid, cid, 'Шуруповерт BOSCH набор',               1000, 10000);
-    PERFORM _v3_ins(bid, cid, 'Шуруповерт JIONGJIE набор',            1000, 10000);
-    PERFORM _v3_ins(bid, cid, 'Шуруповерт MAKITA 456 набор',          2000, 36000);
-    PERFORM _v3_ins(bid, cid, 'Шуруповерт MAKONA набор',              1000, 10000);
-    PERFORM _v3_ins(bid, cid, 'Шуруповерт-дрель INCCO 16 патрон',     1000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Шуруповерт-дрель Агресс',              1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Бурмашинка электрическая',             1000,  3000);
-    PERFORM _v3_ins(bid, cid, 'Сверлильный станок',                   2000, 25000);
-
-    -- 22. Шлифовальные машинки
-    INSERT INTO tool_categories (name) VALUES ('Шлифовальные машинки') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка эксцентриковая 120мм',     1000,  4000);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка плоскошлифовальная TOLSEN',1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка вибрационная MAKITA',      1000,   800);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка BODA',                     1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка Пит дерево',               1000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка Жираф шпаклевка',          2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка Жираф TOLSEN',             2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка Жираф бесщеточный',        2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка дерево пол СО-206',        5000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Шлиф. машинка дерево пол СО-401',        5000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Полировочная машинка',                    1000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Реноватор',                               1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Оберфрейзер 12мм цанга',                 1000,  8000);
-
-    -- 23. Штробрезы и стенорезы
-    INSERT INTO tool_categories (name) VALUES ('Штробрезы и стенорезы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Штробрез INGCO',                              2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Штробрез HOTECHE ПРОФЕССИОНАЛ. 156мм',        2000, 17000);
-    PERFORM _v3_ins(bid, cid, 'Стенорезная машина ручная 400мм рез 14 см',   5000, 30000);
-
-    -- 24. Трамбовки
-    INSERT INTO tool_categories (name) VALUES ('Трамбовки') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Трамбовка электр. 1-фазная 250 тип',          3000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка электр. 3-фазная 250 тип',          3000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка электр. 1-фазная большая',          3000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка бензиновая',                        5000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка бензиновая Кузнечик ПИШПЕК',        5000, 100000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка площадочная электро 250 тип',       3000,  32000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка площадочная 350 тип',               3000,  32000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка площадочная ELITECH 350 тип',       5000,  50000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка площадочная оранжевая 350 тип',     3000,  50000);
-    PERFORM _v3_ins(bid, cid, 'Трамбовка площадочная TOLSEN 125кг 500 тип',  5000,  93840);
-
-    -- 25. Трубогибы
-    INSERT INTO tool_categories (name) VALUES ('Трубогибы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Трубогиб квадрат 15-40мм',              2000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Трубогиб круглые трубы 15-30мм',        2000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Трубогиб круглый пруток до 16мм',       2000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Трубогиб 6-10мм медь алюминий малый',   1000,  1500);
-    PERFORM _v3_ins(bid, cid, 'Трубогиб 6-22мм медь алюминий большой', 1000,  6500);
-    PERFORM _v3_ins(bid, cid, 'Трубогиб полоса 40x10мм',               2000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Рычажный трубогиб 6-10мм',              1000,  3000);
-
-    -- 26. Насосы и мотопомпы
-    INSERT INTO tool_categories (name) VALUES ('Насосы и мотопомпы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Насос для закачки систем отопления 1200л/ч', 1000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Насос погружной 250л/мин 50 диам',           1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Мотопомпа вода грязь',                       4000, 30000);
-
-    -- 27. Мотобуры
-    INSERT INTO tool_categories (name) VALUES ('Мотобуры') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Мотобур Патриот 4-х тактный', 4000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Мотобур Патриот двуручный',    4000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Мотобур Патриот одноручный',   4000, 25000);
-
-    -- 28. Лазерные и оптические приборы
-    INSERT INTO tool_categories (name) VALUES ('Лазерные и оптические приборы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Лазерный нивелир зеленый 360',        1000,  5500);
-    PERFORM _v3_ins(bid, cid, 'Лазерная рулетка HILTI PD 38',        2000, 38000);
-    PERFORM _v3_ins(bid, cid, 'Нивелир ADA оптический',              2000, 36000);
-    PERFORM _v3_ins(bid, cid, 'Нивелир Spectra AL-20 оптический',    2000, 28000);
-    PERFORM _v3_ins(bid, cid, 'Нивелир АТ-32 оптический',            2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Лазерный термометр пирометр',         1000,  1500);
-    PERFORM _v3_ins(bid, cid, 'Детектор скрытой проводки',           1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Детектор скрытой проводки АДА',       1000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Тепловизор ADA',                      2000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Тепловизор UNI-T PRO UTi260B',        2000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Уровни STABILA',                      1000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Мегометр',                            1000,  2000);
-
-    -- 29. Пылесосы
-    INSERT INTO tool_categories (name) VALUES ('Пылесосы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Пылесос моющий Karcher Puzzi 10/1', 2000, 130000);
-    PERFORM _v3_ins(bid, cid, 'Пылесос моющий Karcher Puzzi 8/1',  2000,  80000);
-    PERFORM _v3_ins(bid, cid, 'Пылесос моющий Karcher SE 6.100',   2000,  35000);
-    PERFORM _v3_ins(bid, cid, 'Пылесос строит. HOTECHE 75л',       2000,  30000);
-    PERFORM _v3_ins(bid, cid, 'Пылесос строит. INCCO 75л',         2000,  30000);
-    PERFORM _v3_ins(bid, cid, 'Пылесос строит. китай малый',       1000,  10000);
-    PERFORM _v3_ins(bid, cid, 'Пароочиститель Karcher SC 4',        2000,  35000);
-
-    -- 30. Подъемники и такелаж
-    INSERT INTO tool_categories (name) VALUES ('Подъемники и такелаж') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Козловой подъемник',                   5000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Козловой подъемник тележка таль',      5000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Тельфер 300-600кг',                    2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Тельфер 400-800кг',                    2000, 25000);
-    PERFORM _v3_ins(bid, cid, 'Таль 1.5т 3м',                         1000,  9000);
-    PERFORM _v3_ins(bid, cid, 'Присоска аккумуляторная 150кг',        1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Рохля 2500кг',                         4000, 30000);
-    PERFORM _v3_ins(bid, cid, 'Ходули',                               2000, 35000);
-    PERFORM _v3_ins(bid, cid, 'Пресс гидравлический',                 1000, 25000);
-
-    -- 31. Строительные леса и лестницы
-    INSERT INTO tool_categories (name) VALUES ('Строительные леса и лестницы') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Леса строительные одна секция',         500,  6500);
-    PERFORM _v3_ins(bid, cid, 'Колеса на леса большие за 1 шт',        500,  1750);
-    PERFORM _v3_ins(bid, cid, 'Колеса на леса маленькие за 1 шт',      500,  1750);
-    PERFORM _v3_ins(bid, cid, 'Комплект колес на леса 4 шт',          4000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Лестница-трансформер 3.55м',           1000, 11000);
-    PERFORM _v3_ins(bid, cid, 'Лестница-трансформер 4.65м',           1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Лестница-трансформер 6.0м',            2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Лестница-стремянка 3.6м',              1000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Лестница телескопическая 4.4м',        1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Стремянки с широкими ножками',          1000,  5000);
-
-    -- 32. Разное
-    INSERT INTO tool_categories (name) VALUES ('Разное') RETURNING id INTO cid;
-    PERFORM _v3_ins(bid, cid, 'Выпрямитель проволоки арматуры',         4000, 40000);
-    PERFORM _v3_ins(bid, cid, 'Гайковерт',                              1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Головки FORCE',                          1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Динамометрический ключ 1/2 40-210Нм',    1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Динамометрический ключ 1/4 5-25Нм',      1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Динамометрический ключ 3/8 19-110Нм',    1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Домкрат 20 тонн',                        1000,  5000);
-    PERFORM _v3_ins(bid, cid, 'Домкрат 32 тонн',                        1000,  8500);
-    PERFORM _v3_ins(bid, cid, 'Домкрат 50 тонн',                        1000,  8500);
-    PERFORM _v3_ins(bid, cid, 'Каток садовый',                          1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Кафельный станок ручной 60см',           1000,  7000);
-    PERFORM _v3_ins(bid, cid, 'Кафельный станок ручной 120см',          2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Кафельный станок 100см ИТАЛИЯ',          4000, 65000);
-    PERFORM _v3_ins(bid, cid, 'Ковролинорез',                           1000,  8500);
-    PERFORM _v3_ins(bid, cid, 'Кондуктор для врезки замков',            1000,  8500);
-    PERFORM _v3_ins(bid, cid, 'Кувалда',                                 500,  2500);
-    PERFORM _v3_ins(bid, cid, 'Кабелерез',                              1000,  2000);
-    PERFORM _v3_ins(bid, cid, 'Лерки сантехнические',                   1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Набор для установки кондиционера',        1000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Набор звездочек',                         1000, 12000);
-    PERFORM _v3_ins(bid, cid, 'Опрессовщик электрических кабелей',       1000,  9500);
-    PERFORM _v3_ins(bid, cid, 'Опрессометр сантехнический',              2000, 15000);
-    PERFORM _v3_ins(bid, cid, 'Паяльная лампа',                         1000,  2000);
-    PERFORM _v3_ins(bid, cid, 'Прожектор',                              1000,  2500);
-    PERFORM _v3_ins(bid, cid, 'Станок БЕЛМАШ УНИВЕРСАЛ 2000Е',          2000, 20000);
-    PERFORM _v3_ins(bid, cid, 'Станок для гибки арматуры до 12мм',       500,  2000);
-    PERFORM _v3_ins(bid, cid, 'Станок комбинированный JET JKM 300',      2000, 65000);
-    PERFORM _v3_ins(bid, cid, 'Строгательная машина СО-306',             5000, 50000);
-    PERFORM _v3_ins(bid, cid, 'Съемник гидравлический трехлапый',        1000,  6000);
-    PERFORM _v3_ins(bid, cid, 'Съемники подшипников внутренних набор',   1000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Съемники подшипников трехлапые',           500,  2000);
-    PERFORM _v3_ins(bid, cid, 'Тачки',                                   1000,  6500);
-    PERFORM _v3_ins(bid, cid, 'Трос сантехнический',                     1000,  2000);
-    PERFORM _v3_ins(bid, cid, 'Удлинитель 1Ф 20м',                        500,  3000);
-    PERFORM _v3_ins(bid, cid, 'Удлинитель 1Ф 30м',                        500,  3000);
-    PERFORM _v3_ins(bid, cid, 'Удлинитель 1Ф 50м',                        500,  5000);
-    PERFORM _v3_ins(bid, cid, 'Удлинитель 3Ф 17м Сварка',               2000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Удлинитель 3Ф 24м Пушки',                2000,  8000);
-    PERFORM _v3_ins(bid, cid, 'Фен строительный TOLSEN 600 град',        1000,  4800);
-    PERFORM _v3_ins(bid, cid, 'Фен строительный BOSCH 600 град',         1000,  4800);
-    PERFORM _v3_ins(bid, cid, 'Формы для садовой дорожки',               1000,  1500);
-    PERFORM _v3_ins(bid, cid, 'Газовый ключ',                            1000,  4000);
-    PERFORM _v3_ins(bid, cid, 'Мойка высокого давления Китай 200 бар',   2000, 30000);
 END;
 $do$;
 

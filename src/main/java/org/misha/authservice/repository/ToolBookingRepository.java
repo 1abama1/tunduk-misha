@@ -22,5 +22,18 @@ public interface ToolBookingRepository extends JpaRepository<ToolBooking, UUID> 
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate);
             
+    @Query("SELECT COUNT(b) FROM ToolBooking b WHERE b.toolInstance.id = :toolInstanceId " +
+           "AND b.status = 'ACTIVE' " +
+           "AND b.startDateTime < :endDate " +
+           "AND b.endDateTime > :startDate")
+    int countActiveBookingsByToolInstanceAndDates(
+            @Param("toolInstanceId") Long toolInstanceId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
+
     List<ToolBooking> findByTemplateId(UUID templateId);
+
+    List<ToolBooking> findByToolInstanceId(Long toolInstanceId);
+    
+    List<ToolBooking> findByStatus(org.misha.authservice.entity.BookingStatus status);
 }

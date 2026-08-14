@@ -171,6 +171,21 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
       @Param("reqEnd") LocalDateTime reqEnd
   );
 
+  @Query("""
+      SELECT COUNT(DISTINCT t.id)
+      FROM ToolInstance t
+      JOIN t.contract d
+      WHERE t.id = :toolInstanceId
+        AND d.returnDate IS NULL
+        AND d.terminatedAt IS NULL
+        AND d.startDateTime <= :reqEnd
+      """)
+  int countBusyToolsByInstanceAndDates(
+      @Param("toolInstanceId") Long toolInstanceId,
+      @Param("reqStart") LocalDateTime reqStart,
+      @Param("reqEnd") LocalDateTime reqEnd
+  );
+
 
 }
 

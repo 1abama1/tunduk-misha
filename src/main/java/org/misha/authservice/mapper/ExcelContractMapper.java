@@ -63,6 +63,10 @@ public class ExcelContractMapper {
                 ? ToolInstance.getTemplate().getDepositAmount()
                 : null;
 
+        BigDecimal purchasePrice = ToolInstance != null && ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getPurchasePrice() != null
+                ? ToolInstance.getTemplate().getPurchasePrice()
+                : null;
+
         ClientExcelDto clientDto = toClientExcelDto(client);
         RentalExcelDto rentalDto = toRentalExcelDto(document);
 
@@ -70,6 +74,7 @@ public class ExcelContractMapper {
                 toolFullName,
                 pricePerDay,
                 depositAmount,
+                purchasePrice,
                 1, // quantity
                 clientDto,
                 rentalDto);

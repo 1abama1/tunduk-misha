@@ -2,7 +2,12 @@ package org.misha.authservice.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.misha.authservice.dto.*;
+import org.misha.authservice.dto.ToolDto;
+import org.misha.authservice.dto.ToolDtoSimple;
+import org.misha.authservice.dto.CreateToolRequest;
+import org.misha.authservice.dto.CreateToolBatchRequest;
+import org.misha.authservice.dto.UpdateToolStatusRequest;
+import org.misha.authservice.dto.tool.ToolHistoryDto;
 import org.misha.authservice.service.ToolAvailabilityService;
 import org.misha.authservice.service.ToolHistoryService;
 import org.misha.authservice.service.ToolService;
@@ -60,7 +65,7 @@ public class ToolController {
     }
 
     @GetMapping("/{id}/history")
-    public ResponseEntity<List<org.misha.authservice.dto.ToolInstance.ToolHistoryDto>> getHistory(
+    public ResponseEntity<List<ToolHistoryDto>> getHistory(
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(toolHistoryService.getHistory(id));

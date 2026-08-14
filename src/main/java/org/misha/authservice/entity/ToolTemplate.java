@@ -42,6 +42,9 @@ public class ToolTemplate {
     @Column(name = "deposit_amount")
     private BigDecimal depositAmount;
 
+    @Column(name = "purchase_price")
+    private BigDecimal purchasePrice;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

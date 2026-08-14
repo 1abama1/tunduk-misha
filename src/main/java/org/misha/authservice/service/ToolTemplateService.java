@@ -33,6 +33,9 @@ public class ToolTemplateService {
                 ToolTemplate.builder()
                         .name(request.name())
                         .category(category)
+                        .dailyRentalPrice(request.dailyRentalPrice())
+                        .depositAmount(request.depositAmount())
+                        .purchasePrice(request.purchasePrice())
                         .build()
         );
 
@@ -57,7 +60,30 @@ public class ToolTemplateService {
         return new TemplateFullDto(
                 template.getId(),
                 template.getName(),
+                template.getCategory().getId(),
+                template.getDailyRentalPrice(),
+                template.getDepositAmount(),
+                template.getPurchasePrice(),
                 tools.stream().map(ToolDtoSimple::fromEntity).toList()
         );
+    }
+
+    @Transactional
+    public TemplateFullDto update(UUID id, org.misha.authservice.dto.UpdateTemplateRequest request) {
+        ToolTemplate template = templateRepository.findById(id)
+                .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Template not found"));
+
+        ToolCategory category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Category not found"));
+
+        template.setName(request.name());
+        template.setCategory(category);
+        template.setDailyRentalPrice(request.dailyRentalPrice());
+        template.setDepositAmount(request.depositAmount());
+        template.setPurchasePrice(request.purchasePrice());
+
+        templateRepository.save(template);
+
+        return getFull(id);
     }
 }

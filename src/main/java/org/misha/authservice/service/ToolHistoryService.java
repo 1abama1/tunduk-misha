@@ -2,7 +2,7 @@ package org.misha.authservice.service;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.misha.authservice.dto.ToolInstance.ToolHistoryDto;
+import org.misha.authservice.dto.tool.ToolHistoryDto;
 import org.misha.authservice.entity.RentalDocument;
 import org.misha.authservice.repository.RentalDocumentRepository;
 import org.springframework.stereotype.Service;

@@ -6,10 +6,12 @@ import java.util.UUID;
 
 public record BookingDto(
         UUID id,
-        Long clientId,
         String clientName,
+        String clientPhone,
         UUID templateId,
         String templateName,
+        Long toolInstanceId,
+        Integer toolInstanceNumber,
         LocalDateTime startDateTime,
         LocalDateTime endDateTime,
         String status,
@@ -19,10 +21,12 @@ public record BookingDto(
     public static BookingDto fromEntity(ToolBooking b) {
         return new BookingDto(
                 b.getId(),
-                b.getClient().getId(),
-                b.getClient().getFullName(),
+                b.getClientName(),
+                b.getClientPhone(),
                 b.getTemplate().getId(),
                 b.getTemplate().getName(),
+                b.getToolInstance().getId(),
+                b.getToolInstance().getInstanceNumber(),
                 b.getStartDateTime(),
                 b.getEndDateTime(),
                 b.getStatus().name(),

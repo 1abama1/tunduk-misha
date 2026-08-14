@@ -13,9 +13,14 @@ public record ToolDtoSimple(
         BigDecimal deposit,
         BigDecimal purchasePrice,
         BigDecimal dailyPrice,
-        String status
+        String status,
+        UUID activeBookingId
 ) {
     public static ToolDtoSimple fromEntity(ToolInstance t) {
+        return fromEntity(t, null);
+    }
+
+    public static ToolDtoSimple fromEntity(ToolInstance t, UUID activeBookingId) {
         return new ToolDtoSimple(
                 t.getId(),
                 t.getTemplate() != null ? t.getTemplate().getName() : null,
@@ -23,9 +28,10 @@ public record ToolDtoSimple(
                 t.getInstanceNumber(),
                 null,
                 t.getTemplate() != null ? t.getTemplate().getDepositAmount() : null,
-                null,
+                t.getTemplate() != null ? t.getTemplate().getPurchasePrice() : null,
                 t.getTemplate() != null ? t.getTemplate().getDailyRentalPrice() : null,
-                t.getContract() != null ? "RENTED" : (t.getStatus() != null ? t.getStatus().name() : "AVAILABLE")
+                t.getContract() != null ? "RENTED" : (t.getStatus() != null ? t.getStatus().name() : "AVAILABLE"),
+                activeBookingId
         );
     }
 }

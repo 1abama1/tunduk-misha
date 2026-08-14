@@ -6,10 +6,12 @@ import org.misha.authservice.dto.CreateBookingRequest;
 import org.misha.authservice.entity.BookingStatus;
 import org.misha.authservice.entity.Client;
 import org.misha.authservice.entity.ToolBooking;
+import org.misha.authservice.entity.ToolInstance;
 import org.misha.authservice.entity.ToolTemplate;
 import org.misha.authservice.exception.AppException;
 import org.misha.authservice.repository.ClientRepository;
 import org.misha.authservice.repository.ToolBookingRepository;
+import org.misha.authservice.repository.ToolInstanceRepository;
 import org.misha.authservice.repository.ToolTemplateRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,8 +26,8 @@ import java.util.stream.Collectors;
 public class BookingService {
 
     private final ToolBookingRepository bookingRepository;
-    private final ClientRepository clientRepository;
     private final ToolTemplateRepository templateRepository;
+    private final ToolInstanceRepository instanceRepository;
     private final ToolAvailabilityService availabilityService;
 
     @Transactional
@@ -34,24 +36,30 @@ public class BookingService {
             throw new AppException("INVALID_DATES", "Start date must be before end date", HttpStatus.BAD_REQUEST);
         }
 
-        Client client = clientRepository.findById(request.clientId())
-                .orElseThrow(() -> new AppException("CLIENT_NOT_FOUND", "Client not found", HttpStatus.NOT_FOUND));
-
         ToolTemplate template = templateRepository.findById(request.templateId())
                 .orElseThrow(() -> new AppException("TEMPLATE_NOT_FOUND", "Template not found", HttpStatus.NOT_FOUND));
 
+        ToolInstance toolInstance = instanceRepository.findById(request.toolInstanceId())
+                .orElseThrow(() -> new AppException("INSTANCE_NOT_FOUND", "Tool instance not found", HttpStatus.NOT_FOUND));
+
+        if (!toolInstance.getTemplate().getId().equals(template.getId())) {
+            throw new AppException("INVALID_TEMPLATE", "Tool instance does not belong to the specified template", HttpStatus.BAD_REQUEST);
+        }
+
         // Check availability
-        boolean available = availabilityService.isAvailableForPeriod(
-                request.templateId(), request.startDateTime(), request.endDateTime());
+        boolean available = availabilityService.isInstanceAvailableForPeriod(
+                request.toolInstanceId(), request.startDateTime(), request.endDateTime());
 
         if (!available) {
             throw new AppException("TOOL_NOT_AVAILABLE", 
-                    "No tools available for the requested period", HttpStatus.CONFLICT);
+                    "The requested tool instance is not available for this period", HttpStatus.CONFLICT);
         }
 
         ToolBooking booking = ToolBooking.builder()
-                .client(client)
+                .clientName(request.clientName())
+                .clientPhone(request.clientPhone())
                 .template(template)
+                .toolInstance(toolInstance)
                 .startDateTime(request.startDateTime())
                 .endDateTime(request.endDateTime())
                 .comment(request.comment())
@@ -59,6 +67,14 @@ public class BookingService {
                 .build();
 
         return BookingDto.fromEntity(bookingRepository.save(booking));
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingDto> getAllBookings() {
+        return bookingRepository.findAll().stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(BookingDto::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -77,6 +93,13 @@ public class BookingService {
     @Transactional(readOnly = true)
     public List<BookingDto> getByTemplate(UUID templateId) {
         return bookingRepository.findByTemplateId(templateId).stream()
+                .map(BookingDto::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingDto> getByToolInstance(Long toolInstanceId) {
+        return bookingRepository.findByToolInstanceId(toolInstanceId).stream()
                 .map(BookingDto::fromEntity)
                 .collect(Collectors.toList());
     }

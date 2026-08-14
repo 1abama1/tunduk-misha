@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class ToolService {
     private final ToolInstanceRepository toolInstanceRepository;
     private final ToolTemplateRepository templateRepository;
+    private final ToolBookingRepository bookingRepository;
     private final ToolMapper toolMapper;
     private final ToolRentalGuard toolRentalGuard;
 
@@ -42,7 +43,7 @@ public class ToolService {
     @Transactional(readOnly = true)
     public List<ToolDto> getAllTools() {
         return toolInstanceRepository.findAll().stream()
-                .map(ToolDto::fromEntity)
+                .map(t -> ToolDto.fromEntity(t))
                 .collect(Collectors.toList());
     }
 
@@ -91,8 +92,13 @@ public class ToolService {
                         "Template not found",
                         HttpStatus.NOT_FOUND));
 
-        if (request.inventoryNumber() != null && !request.inventoryNumber().trim().isEmpty()) {
-            if (toolInstanceRepository.existsByInventoryNumber(request.inventoryNumber())) {
+        String invNum = request.inventoryNumber();
+        if (invNum != null && invNum.trim().isEmpty()) {
+            invNum = null;
+        }
+
+        if (invNum != null) {
+            if (toolInstanceRepository.existsByInventoryNumber(invNum)) {
                 throw new AppException(
                         "INVENTORY_EXISTS",
                         "Inventory number must be unique",
@@ -105,7 +111,7 @@ public class ToolService {
 
         ToolInstance tool = ToolInstance.builder()
                 .template(template)
-                .inventoryNumber(request.inventoryNumber())
+                .inventoryNumber(invNum)
                 .instanceNumber(nextInstanceNum)
                 .build();
 
@@ -147,7 +153,7 @@ public class ToolService {
         for (int i = 0; i < request.count(); i++) {
             String inventoryNumber = prefix + String.format("%0" + padLength + "d", nextNumber + i);
 
-            if (toolInstanceRepository.existsByInventoryNumber(inventoryNumber)) {
+            while (toolInstanceRepository.existsByInventoryNumber(inventoryNumber)) {
                 nextNumber++;
                 inventoryNumber = prefix + String.format("%0" + padLength + "d", nextNumber + i);
             }
@@ -161,7 +167,7 @@ public class ToolService {
             created.add(toolInstanceRepository.save(tool));
         }
 
-        return created.stream().map(ToolDto::fromEntity).collect(Collectors.toList());
+        return created.stream().map(t -> ToolDto.fromEntity(t)).collect(Collectors.toList());
     }
 
     @Transactional
@@ -175,9 +181,17 @@ public class ToolService {
 
     @Transactional(readOnly = true)
     public List<ToolDto> getByTemplate(UUID templateId) {
+        Map<Long, UUID> activeBookings = bookingRepository.findByTemplateId(templateId).stream()
+                .filter(b -> b.getStatus() == BookingStatus.ACTIVE && b.getEndDateTime().isAfter(java.time.LocalDateTime.now()))
+                .collect(Collectors.toMap(
+                        b -> b.getToolInstance().getId(),
+                        ToolBooking::getId,
+                        (existing, replacement) -> existing
+                ));
+
         return toolInstanceRepository.findByTemplateId(templateId)
                 .stream()
-                .map(ToolDto::fromEntity)
+                .map(t -> ToolDto.fromEntity(t, activeBookings.get(t.getId())))
                 .toList();
     }
 

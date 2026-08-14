@@ -19,6 +19,11 @@ public class BookingController {
 
     private final BookingService bookingService;
 
+    @GetMapping
+    public ResponseEntity<List<BookingDto>> getAllBookings() {
+        return ResponseEntity.ok(bookingService.getAllBookings());
+    }
+
     @PostMapping
     public ResponseEntity<BookingDto> createBooking(@Valid @RequestBody CreateBookingRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.createBooking(request));
@@ -32,5 +37,10 @@ public class BookingController {
     @GetMapping("/template/{templateId}")
     public ResponseEntity<List<BookingDto>> getByTemplate(@PathVariable UUID templateId) {
         return ResponseEntity.ok(bookingService.getByTemplate(templateId));
+    }
+
+    @GetMapping("/tool/{toolInstanceId}")
+    public ResponseEntity<List<BookingDto>> getByToolInstance(@PathVariable Long toolInstanceId) {
+        return ResponseEntity.ok(bookingService.getByToolInstance(toolInstanceId));
     }
 }

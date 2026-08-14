@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.misha.authservice.entity.ToolInstance;
+import org.misha.authservice.entity.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -25,11 +25,17 @@ public class ToolDto {
     private BigDecimal deposit;
     private BigDecimal dailyPrice;
     private LocalDateTime createdAt;
+    private UUID activeBookingId;
     private ToolTemplateDto template;
 
     public static ToolDto fromEntity(ToolInstance t) {
+        return fromEntity(t, null);
+    }
+
+    public static ToolDto fromEntity(ToolInstance t, UUID activeBookingId) {
         ToolDto dto = new ToolDto();
         dto.setId(t.getId());
+        dto.setActiveBookingId(activeBookingId);
         dto.setInventoryNumber(t.getInventoryNumber());
         dto.setInstanceNumber(t.getInstanceNumber());
         dto.setCreatedAt(t.getCreatedAt());
