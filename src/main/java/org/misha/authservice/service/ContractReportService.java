@@ -33,7 +33,7 @@ public class ContractReportService {
                     ? c.getClient().getFullName()
                     : "вЂ”";
 
-            List<ToolInstance> tools = ToolInstanceRepository.findByContractIdWithTemplate(c.getId());
+            List<ToolInstance> tools = c.getTools();
 
             String toolName = "вЂ”";
             if (!tools.isEmpty()) {

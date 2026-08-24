@@ -20,6 +20,7 @@ public class ContractSyncDto {
         private String offlineId;
         private Long clientId;
         private Long toolId;
+        private List<Long> toolIds;
         private String contractNumber;
     }
 

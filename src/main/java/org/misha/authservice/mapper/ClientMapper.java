@@ -131,11 +131,13 @@ public class ClientMapper {
 
         ToolDto toolDto = ToolInstance != null ? ToolDto.fromEntity(ToolInstance) : null;
 
-        // Р”Р»СЏ РѕР±СЂР°С‚РЅРѕР№ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё РёР»Рё РµСЃР»Рё РІ ToolInstance РЅРµС‚ РёРЅС„С‹, РЅРѕ РѕРЅР° РµСЃС‚СЊ РІ d
+        // Д»СЏ РѕР±СЂР°С‚РЅРѕР№ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё РёР»Рё РµСЃР»Рё РІ ToolInstance РЅРµС‚ РёРЅС„С‹, РЅРѕ РѕРЅР° РµСЃС‚СЊ РІ d
         if (toolDto != null && toolDto.getCategoryName() == null && ToolInstance != null && ToolInstance.getTemplate() != null
                 && ToolInstance.getTemplate().getCategory() != null) {
             toolDto.setCategoryName(ToolInstance.getTemplate().getCategory().getName());
         }
+
+        List<ToolDto> toolsList = d.getTools() != null ? d.getTools().stream().map(ToolDto::fromEntity).toList() : List.of();
 
         return DocumentDetailDto.builder()
                 .id(d.getId())
@@ -153,6 +155,7 @@ public class ClientMapper {
                 .client(d.getClient() != null ? toDtoForDetail(d.getClient()) : null)
                 .toolId(toolId != null ? toolId : (ToolInstance != null ? ToolInstance.getId() : null))
                 .ToolInstance(toolDto)
+                .tools(toolsList)
                 .build();
     }
 

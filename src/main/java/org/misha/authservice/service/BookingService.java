@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -29,10 +30,13 @@ public class BookingService {
     private final ToolTemplateRepository templateRepository;
     private final ToolInstanceRepository instanceRepository;
     private final ToolAvailabilityService availabilityService;
+    private final BookingTimeCalculator timeCalculator;
 
     @Transactional
     public BookingDto createBooking(CreateBookingRequest request) {
-        if (request.startDateTime().isAfter(request.endDateTime())) {
+            LocalDateTime calculatedEndDateTime = timeCalculator.calculateEndDateTime(request.startDateTime(), request.hours());
+        
+        if (request.startDateTime().isAfter(calculatedEndDateTime)) {
             throw new AppException("INVALID_DATES", "Start date must be before end date", HttpStatus.BAD_REQUEST);
         }
 
@@ -48,7 +52,7 @@ public class BookingService {
 
         // Check availability
         boolean available = availabilityService.isInstanceAvailableForPeriod(
-                request.toolInstanceId(), request.startDateTime(), request.endDateTime());
+                request.toolInstanceId(), request.startDateTime(), calculatedEndDateTime);
 
         if (!available) {
             throw new AppException("TOOL_NOT_AVAILABLE", 
@@ -61,7 +65,7 @@ public class BookingService {
                 .template(template)
                 .toolInstance(toolInstance)
                 .startDateTime(request.startDateTime())
-                .endDateTime(request.endDateTime())
+                .endDateTime(calculatedEndDateTime)
                 .comment(request.comment())
                 .status(BookingStatus.ACTIVE)
                 .build();

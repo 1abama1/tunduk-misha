@@ -71,17 +71,33 @@ public class ContractCrudService {
         if (req.clientId() == null) {
             throw new BadRequestException("Не передан clientId");
         }
-        if (req.toolId() == null) {
-            throw new BadRequestException("Не передан toolId");
+
+        java.util.List<Long> idsToRent = new java.util.ArrayList<>();
+        if (req.toolIds() != null && !req.toolIds().isEmpty()) {
+            idsToRent.addAll(req.toolIds());
+        } else if (req.toolId() != null) {
+            idsToRent.add(req.toolId());
+        }
+
+        if (idsToRent.isEmpty()) {
+            throw new BadRequestException("Не передан toolId или toolIds");
+        }
+        if (idsToRent.size() > 10) {
+            throw new BadRequestException("Максимум 10 инструментов в одном договоре");
         }
 
         Client client = clientRepository.findById(req.clientId())
                 .orElseThrow(() -> new NotFoundException("Клиент не найден"));
 
-        ToolInstance tool = toolInstanceRepository.findById(req.toolId())
-                .orElseThrow(() -> new NotFoundException("Инструмент не найден"));
+        java.util.List<ToolInstance> toolsToRent = toolInstanceRepository.findAllById(idsToRent);
+        if (toolsToRent.size() != idsToRent.size()) {
+            throw new NotFoundException("Один или несколько инструментов не найдены");
+        }
 
-        toolRentalGuard.ensureAvailableForRental(tool);
+        for (ToolInstance tool : toolsToRent) {
+            toolRentalGuard.ensureAvailableForRental(tool);
+        }
+
         String contractNumber = (req.contractNumber() != null && !req.contractNumber().isBlank())
                 ? req.contractNumber()
                 : generateDailyContractNumber();
@@ -97,16 +113,18 @@ public class ContractCrudService {
 
         documentRepository.save(doc);
 
-        tool.setContract(doc);
-        toolInstanceRepository.save(tool);
+        for (ToolInstance tool : toolsToRent) {
+            tool.setContract(doc);
+            toolInstanceRepository.save(tool);
+        }
 
-        doc.setToolId(tool.getId());
+        doc.setToolId(toolsToRent.get(0).getId());
         documentRepository.save(doc);
 
         auditLogService.logCreate("Contract", doc.getId(), Map.of(
                 "contractNumber", doc.getContractNumber(),
                 "clientId", client.getId(),
-                "toolId", tool.getId()));
+                "toolIds", idsToRent));
 
         return toDto(doc);
     }

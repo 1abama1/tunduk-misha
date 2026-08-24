@@ -49,6 +49,8 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
   @Query("""
       SELECT DISTINCT d FROM RentalDocument d
       LEFT JOIN FETCH d.client
+      LEFT JOIN FETCH d.tools t
+      LEFT JOIN FETCH t.template tmpl
       WHERE d.returnDate IS NULL AND d.terminatedAt IS NULL
       ORDER BY d.startDateTime DESC
       """)

@@ -1,10 +1,12 @@
 package org.misha.authservice.dto;
 
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
 public record CreateContractRequest(
         @NotNull(message = "clientId is required") Long clientId,
-        @NotNull(message = "toolId is required") Long toolId,
+        Long toolId,
+        List<Long> toolIds,
         String contractNumber,
         String offlineId
 ) {

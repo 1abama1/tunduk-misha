@@ -87,23 +87,19 @@ public class ClientService {
     public Page<ClientDto> getAll(int page, int size) {
         Page<Client> clientsPage = clientRepository.findAll(PageRequest.of(page, size));
 
-        List<Long> documentIds = clientsPage.getContent().stream()
-                .flatMap(client -> client.getDocuments().stream())
-                .map(RentalDocument::getId)
-                .toList();
-        if (!documentIds.isEmpty()) {
-            rentalDocumentRepository.findByIdsWithTools(documentIds);
-        }
+        List<Long> clientIds = clientsPage.getContent().stream().map(Client::getId).toList();
+        java.util.Map<Long, List<ClientImageDto>> imagesByClientId = clientIds.isEmpty()
+                ? java.util.Map.of()
+                : imageRepository.findByClientIdIn(clientIds).stream()
+                        .collect(java.util.stream.Collectors.groupingBy(
+                                img -> img.getClient().getId(),
+                                java.util.stream.Collectors.mapping(
+                                        img -> new ClientImageDto(img.getId(), img.getFileName(), img.getFileType()),
+                                        java.util.stream.Collectors.toList())));
 
         return clientsPage.map(client -> {
             ClientDto dto = clientMapper.toDto(client);
-            dto.setImages(
-                    imageRepository.findByClientId(client.getId()).stream()
-                            .map(img -> new ClientImageDto(
-                                    img.getId(),
-                                    img.getFileName(),
-                                    img.getFileType()))
-                            .toList());
+            dto.setImages(imagesByClientId.getOrDefault(client.getId(), List.of()));
             return dto;
         });
     }

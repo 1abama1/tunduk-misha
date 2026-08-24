@@ -56,6 +56,7 @@ public class SyncService {
                 CreateContractRequest req = new CreateContractRequest(
                         item.getClientId(),
                         item.getToolId(),
+                        item.getToolIds(),
                         item.getContractNumber(),
                         item.getOfflineId());
                 var created = contractService.createContract(req);

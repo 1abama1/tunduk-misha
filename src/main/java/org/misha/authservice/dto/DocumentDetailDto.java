@@ -30,5 +30,6 @@ public class DocumentDetailDto {
 
     private Long toolId;
     private ToolDto ToolInstance;
+    private java.util.List<ToolDto> tools;
 }
 

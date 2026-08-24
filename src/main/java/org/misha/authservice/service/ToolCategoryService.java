@@ -55,7 +55,7 @@ public class ToolCategoryService {
         Map<Long, UUID> activeBookings = getActiveBookingsMap();
 
         List<TemplateFullDto> templateDtos = category.getTemplates().stream().map(t -> {
-            List<ToolDtoSimple> toolDtos = ToolInstanceRepository.findByTemplateId(t.getId()).stream()
+            List<ToolDtoSimple> toolDtos = t.getInstances().stream()
                 .map(tool -> ToolDtoSimple.fromEntity(tool, activeBookings.get(tool.getId())))
                 .toList();
             return new TemplateFullDto(t.getId(), t.getName(), category.getId(), t.getDailyRentalPrice(), t.getDepositAmount(), t.getPurchasePrice(), toolDtos);
@@ -71,7 +71,7 @@ public class ToolCategoryService {
 
         return categories.stream().map(category -> {
             List<TemplateFullDto> templateDtos = category.getTemplates().stream().map(t -> {
-            List<ToolDtoSimple> toolDtos = ToolInstanceRepository.findByTemplateId(t.getId()).stream()
+            List<ToolDtoSimple> toolDtos = t.getInstances().stream()
                 .map(tool -> ToolDtoSimple.fromEntity(tool, activeBookings.get(tool.getId())))
                 .toList();
                 return new TemplateFullDto(t.getId(), t.getName(), category.getId(), t.getDailyRentalPrice(), t.getDepositAmount(), t.getPurchasePrice(), toolDtos);

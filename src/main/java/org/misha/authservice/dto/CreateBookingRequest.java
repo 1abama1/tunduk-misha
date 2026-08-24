@@ -10,6 +10,9 @@ public record CreateBookingRequest(
         @NotNull(message = "template ID is required") UUID templateId,
         @NotNull(message = "tool instance ID is required") Long toolInstanceId,
         @NotNull(message = "start date time is required") LocalDateTime startDateTime,
-        @NotNull(message = "end date time is required") LocalDateTime endDateTime,
+        @NotNull(message = "hours is required") 
+        @jakarta.validation.constraints.Min(value = 1, message = "Minimum 1 hour") 
+        @jakarta.validation.constraints.Max(value = 6, message = "Maximum 6 hours") 
+        Integer hours,
         String comment
 ) {}
