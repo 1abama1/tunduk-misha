@@ -107,4 +107,11 @@ public class BookingService {
                 .map(BookingDto::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    public BookingDto getBookingById(UUID id) {
+        return bookingRepository.findById(id)
+                .map(BookingDto::fromEntity)
+                .orElseThrow(() -> new AppException("BOOKING_NOT_FOUND", "Booking not found", HttpStatus.NOT_FOUND));
+    }
 }

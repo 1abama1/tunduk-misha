@@ -49,17 +49,18 @@ public class ToolService {
 
     @Transactional(readOnly = true)
     public List<ToolDtoSimple> getAll() {
+        Map<Long, UUID> activeBookings = getActiveBookingsMap();
         return toolInstanceRepository.findAll().stream()
-                .map(ToolDtoSimple::fromEntity)
+                .map(t -> ToolDtoSimple.fromEntity(t, activeBookings.get(t.getId())))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public ToolDtoSimple getOne(Long id) {
-        return ToolDtoSimple.fromEntity(
-                toolInstanceRepository.findById(id)
-                        .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "ToolInstance not found", HttpStatus.NOT_FOUND))
-        );
+        ToolInstance tool = toolInstanceRepository.findById(id)
+                .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "ToolInstance not found", HttpStatus.NOT_FOUND));
+        UUID activeBookingId = getActiveBookingsMap().get(id);
+        return ToolDtoSimple.fromEntity(tool, activeBookingId);
     }
 
     @Transactional(readOnly = true)
@@ -214,5 +215,15 @@ public class ToolService {
 
         tool.setStatus(newStatus);
         return ToolDto.fromEntity(toolInstanceRepository.save(tool));
+    }
+
+    private Map<Long, UUID> getActiveBookingsMap() {
+        return bookingRepository.findByStatus(BookingStatus.ACTIVE).stream()
+                .filter(b -> b.getEndDateTime().isAfter(java.time.LocalDateTime.now()))
+                .collect(Collectors.toMap(
+                        b -> b.getToolInstance().getId(),
+                        ToolBooking::getId,
+                        (existing, replacement) -> existing
+                ));
     }
 }

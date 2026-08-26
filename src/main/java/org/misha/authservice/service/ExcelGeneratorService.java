@@ -138,19 +138,50 @@ public class ExcelGeneratorService {
             return;
         }
 
-        // N20 — Стоимость аренды за 1 сутки
-        if (dto.pricePerDay() != null) {
-            set(sheet, "N20", dto.pricePerDay());
+        // Строки 21–25 (0-based: 20–24) — таблица инструментов
+        // Колонки по шаблону:
+        //   A (0)    = №
+        //   B-G      = Наименование Имущества
+        //   H-J (I)  = Кол-Во  (записываем в I = col 8)
+        //   K-M      = Завод. или индеф. № (записываем в K = col 10)
+        //   N-O      = Стоимость оборудования (записываем в N = col 13)
+        int firstDataRow = 20; // Excel row 21 → 0-based index 20
+
+        java.util.List<org.misha.authservice.dto.excel.ToolExcelDto> tools =
+                dto.tools() != null ? dto.tools() : java.util.List.of();
+
+        for (int i = 0; i < 5; i++) {
+            String rowRef = String.valueOf(firstDataRow + i + 1); // Excel row number (1-based)
+
+            if (i < tools.size()) {
+                var tool = tools.get(i);
+                // Номер по порядку
+                set(sheet, "A" + rowRef, i + 1);
+                // Наименование — пишем в колонку B
+                set(sheet, "B" + rowRef, tool.name() != null ? tool.name() : "");
+                // Кол-Во — пишем в колонку I (col index 8)
+                set(sheet, "I" + rowRef, tool.quantity());
+                // Завод. / индеф. №
+                set(sheet, "K" + rowRef, tool.inventoryNumber() != null ? tool.inventoryNumber() : "");
+                // Стоимость оборудования
+                if (tool.pricePerDay() != null) {
+                    set(sheet, "N" + rowRef, tool.pricePerDay());
+                } else {
+                    clear(sheet, "N" + rowRef);
+                }
+            } else {
+                // Очищаем лишние строки
+                clear(sheet, "A" + rowRef);
+                clear(sheet, "B" + rowRef);
+                clear(sheet, "I" + rowRef);
+                clear(sheet, "K" + rowRef);
+                clear(sheet, "N" + rowRef);
+            }
         }
 
-        // P20 — Залог (обеспечительный платеж)
+        // P20 — Залог (обеспечительный платеж) — оставляем из первого инструмента
         if (dto.depositAmount() != null) {
             set(sheet, "P20", dto.depositAmount());
-        }
-
-        // I20 — Количество оборудования
-        if (dto.quantity() != null) {
-            set(sheet, "I20", dto.quantity());
         }
     }
 

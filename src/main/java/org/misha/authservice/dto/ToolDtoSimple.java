@@ -30,7 +30,7 @@ public record ToolDtoSimple(
                 t.getTemplate() != null ? t.getTemplate().getDepositAmount() : null,
                 t.getTemplate() != null ? t.getTemplate().getPurchasePrice() : null,
                 t.getTemplate() != null ? t.getTemplate().getDailyRentalPrice() : null,
-                t.getContract() != null ? "RENTED" : (t.getStatus() != null ? t.getStatus().name() : "AVAILABLE"),
+                t.getContract() != null ? "RENTED" : (activeBookingId != null ? "BOOKED" : (t.getStatus() != null ? t.getStatus().name() : "AVAILABLE")),
                 activeBookingId
         );
     }

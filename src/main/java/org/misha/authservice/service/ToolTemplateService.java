@@ -5,9 +5,12 @@ import org.misha.authservice.dto.CreateTemplateRequest;
 import org.misha.authservice.dto.TemplateDto;
 import org.misha.authservice.dto.TemplateFullDto;
 import org.misha.authservice.dto.ToolDtoSimple;
+import org.misha.authservice.entity.BookingStatus;
+import org.misha.authservice.entity.ToolBooking;
 import org.misha.authservice.entity.ToolInstance;
 import org.misha.authservice.entity.ToolCategory;
 import org.misha.authservice.entity.ToolTemplate;
+import org.misha.authservice.repository.ToolBookingRepository;
 import org.misha.authservice.repository.ToolCategoryRepository;
 import org.misha.authservice.repository.ToolInstanceRepository;
 import org.misha.authservice.repository.ToolTemplateRepository;
@@ -15,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +28,7 @@ public class ToolTemplateService {
     private final ToolTemplateRepository templateRepository;
     private final ToolCategoryRepository categoryRepository;
     private final ToolInstanceRepository ToolInstanceRepository;
+    private final ToolBookingRepository bookingRepository;
 
     @Transactional
     public TemplateDto create(CreateTemplateRequest request) {
@@ -56,6 +62,7 @@ public class ToolTemplateService {
                 .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Template not found"));
 
         List<ToolInstance> tools = ToolInstanceRepository.findByTemplateId(template.getId());
+        Map<Long, UUID> activeBookings = getActiveBookingsMap();
 
         return new TemplateFullDto(
                 template.getId(),
@@ -64,7 +71,9 @@ public class ToolTemplateService {
                 template.getDailyRentalPrice(),
                 template.getDepositAmount(),
                 template.getPurchasePrice(),
-                tools.stream().map(ToolDtoSimple::fromEntity).toList()
+                tools.stream()
+                        .map(t -> ToolDtoSimple.fromEntity(t, activeBookings.get(t.getId())))
+                        .toList()
         );
     }
 
@@ -85,5 +94,15 @@ public class ToolTemplateService {
         templateRepository.save(template);
 
         return getFull(id);
+    }
+
+    private Map<Long, UUID> getActiveBookingsMap() {
+        return bookingRepository.findByStatus(BookingStatus.ACTIVE).stream()
+                .filter(b -> b.getEndDateTime().isAfter(java.time.LocalDateTime.now()))
+                .collect(Collectors.toMap(
+                        b -> b.getToolInstance().getId(),
+                        ToolBooking::getId,
+                        (existing, replacement) -> existing
+                ));
     }
 }

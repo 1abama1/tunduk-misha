@@ -24,6 +24,11 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getAllBookings());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<BookingDto> getBookingById(@PathVariable UUID id) {
+        return ResponseEntity.ok(bookingService.getBookingById(id));
+    }
+
     @PostMapping
     public ResponseEntity<BookingDto> createBooking(@Valid @RequestBody CreateBookingRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.createBooking(request));

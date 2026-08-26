@@ -51,21 +51,54 @@ public class ExcelContractMapper {
             RentalDocument document,
             ToolInstance ToolInstance,
             Client client) {
-        String toolFullName = buildToolFullName(ToolInstance);
+        return toExcelContractDto(document,
+                ToolInstance != null ? java.util.List.of(ToolInstance) : java.util.List.of(),
+                client);
+    }
+
+    /**
+     * Основной метод: принимает список инструментов (первые 5 будут в таблице "Пр №1").
+     */
+    public ExcelContractDto toExcelContractDto(
+            RentalDocument document,
+            java.util.List<ToolInstance> toolInstances,
+            Client client) {
+
+        // Первый инструмент — для обратной совместимости и шапки
+        ToolInstance firstTool = (toolInstances != null && !toolInstances.isEmpty())
+                ? toolInstances.get(0)
+                : null;
+
+        String toolFullName = buildToolFullName(firstTool);
 
         BigDecimal pricePerDay = document.getDailyPrice() != null
                 ? BigDecimal.valueOf(document.getDailyPrice())
-                : (ToolInstance != null && ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getDailyRentalPrice() != null
-                        ? ToolInstance.getTemplate().getDailyRentalPrice()
+                : (firstTool != null && firstTool.getTemplate() != null && firstTool.getTemplate().getDailyRentalPrice() != null
+                        ? firstTool.getTemplate().getDailyRentalPrice()
                         : null);
 
-        BigDecimal depositAmount = ToolInstance != null && ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getDepositAmount() != null
-                ? ToolInstance.getTemplate().getDepositAmount()
+        BigDecimal depositAmount = firstTool != null && firstTool.getTemplate() != null && firstTool.getTemplate().getDepositAmount() != null
+                ? firstTool.getTemplate().getDepositAmount()
                 : null;
 
-        BigDecimal purchasePrice = ToolInstance != null && ToolInstance.getTemplate() != null && ToolInstance.getTemplate().getPurchasePrice() != null
-                ? ToolInstance.getTemplate().getPurchasePrice()
+        BigDecimal purchasePrice = firstTool != null && firstTool.getTemplate() != null && firstTool.getTemplate().getPurchasePrice() != null
+                ? firstTool.getTemplate().getPurchasePrice()
                 : null;
+
+        // Строим список ToolExcelDto — максимум 5 инструментов
+        java.util.List<org.misha.authservice.dto.excel.ToolExcelDto> toolDtos = new java.util.ArrayList<>();
+        if (toolInstances != null) {
+            int limit = Math.min(toolInstances.size(), 5);
+            for (int i = 0; i < limit; i++) {
+                ToolInstance t = toolInstances.get(i);
+                String name = buildToolFullName(t);
+                String invNum = t.getInventoryNumber() != null ? t.getInventoryNumber() : "";
+                BigDecimal price = (t.getTemplate() != null && t.getTemplate().getDailyRentalPrice() != null)
+                        ? t.getTemplate().getDailyRentalPrice()
+                        : (document.getDailyPrice() != null ? BigDecimal.valueOf(document.getDailyPrice()) : null);
+                toolDtos.add(new org.misha.authservice.dto.excel.ToolExcelDto(name, invNum, 1, price));
+            }
+        }
 
         ClientExcelDto clientDto = toClientExcelDto(client);
         RentalExcelDto rentalDto = toRentalExcelDto(document);
@@ -75,9 +108,10 @@ public class ExcelContractMapper {
                 pricePerDay,
                 depositAmount,
                 purchasePrice,
-                1, // quantity
+                toolInstances != null ? toolInstances.size() : 1,
                 clientDto,
-                rentalDto);
+                rentalDto,
+                toolDtos);
     }
 
     private ClientExcelDto toClientExcelDto(Client client) {

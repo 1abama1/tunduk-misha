@@ -53,7 +53,7 @@ public class SyncService {
                     continue;
                 }
 
-                CreateContractRequest req = new CreateContractRequest(
+                CreateContractRequest req =     new CreateContractRequest(
                         item.getClientId(),
                         item.getToolId(),
                         item.getToolIds(),

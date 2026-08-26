@@ -42,6 +42,8 @@ public class ToolDto {
         
         if (t.getContract() != null) {
             dto.setStatus("RENTED");
+        } else if (activeBookingId != null) {
+            dto.setStatus("BOOKED");
         } else {
             dto.setStatus(t.getStatus() != null ? t.getStatus().name() : "AVAILABLE");
         }

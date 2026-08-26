@@ -105,36 +105,32 @@ public class ContractExcelService {
     /**
      * Р“РµРЅРµСЂРёСЂСѓРµС‚ Excel РїРѕ ID РґРѕРіРѕРІРѕСЂР°.
      *
-     * РћРїС‚РёРјРёР·РёСЂРѕРІР°РЅ: РєР»РёРµРЅС‚ + РїР°СЃРїРѕСЂС‚ Р·Р°РіСЂСѓР¶Р°СЋС‚СЃСЏ РѕРґРЅРёРј JOIN FETCH Р·Р°РїСЂРѕСЃРѕРј
-     * С‡РµСЂРµР· {@code findByIdForExcel}, Р±РµР· РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹С… lazy-РѕР±СЂР°С‰РµРЅРёР№.
-     * ToolInstance РёС‰РµС‚СЃСЏ РѕС‚РґРµР»СЊРЅРѕ (РїРѕ toolId РёР»Рё РїРѕ contractId РєР°Рє fallback).
+     * Оптимизирован: клиент + паспорт загружаются одним JOIN FETCH запросом
+     * через {@code findByIdForExcel}, без дополнительных lazy-обращений.
+     * ToolInstance ищется отдельно (по toolId или по contractId как fallback).
      */
     @Transactional(readOnly = true)
     public byte[] generateById(Long contractId) {
-        // РћРґРёРЅ Р·Р°РїСЂРѕСЃ: document + client + passport (LEFT JOIN FETCH)
+        // Один запрос: document + client + passport (LEFT JOIN FETCH)
         RentalDocument document = documentRepository.findByIdForExcel(contractId)
-                .orElseThrow(() -> new AppException("CONTRACT_NOT_FOUND", "Р”РѕРіРѕРІРѕСЂ РЅРµ РЅР°Р№РґРµРЅ", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new AppException("CONTRACT_NOT_FOUND", "Договор не найден", HttpStatus.NOT_FOUND));
 
         Client client = document.getClient();
         if (client == null) {
-            throw new AppException("CLIENT_NOT_FOUND", "РљР»РёРµРЅС‚ РЅРµ РЅР°Р№РґРµРЅ РґР»СЏ РґРѕРіРѕРІРѕСЂР°", HttpStatus.NOT_FOUND);
+            throw new AppException("CLIENT_NOT_FOUND", "Клиент не найден для договора", HttpStatus.NOT_FOUND);
         }
 
-        // РС‰РµРј РёРЅСЃС‚СЂСѓРјРµРЅС‚: СЃРЅР°С‡Р°Р»Р° РїРѕ toolId, Р·Р°С‚РµРј fallback РїРѕ contractId
-        ToolInstance ToolInstance = null;
-        if (document.getToolId() != null) {
-            ToolInstance = ToolInstanceRepository.findByIdWithTemplateAndContract(document.getToolId()).orElse(null);
-        }
-        if (ToolInstance == null) {
-            var tools = ToolInstanceRepository.findByContractIdWithTemplate(contractId);
-            if (!tools.isEmpty()) {
-                ToolInstance = tools.get(0);
-            }
+        // Загружаем все инструменты договора (с шаблонами)
+        java.util.List<ToolInstance> allTools = ToolInstanceRepository.findByContractIdWithTemplate(contractId);
+
+        // Если ни один инструмент не привязан через contract_id, пробуем по toolId в документе
+        if (allTools.isEmpty() && document.getToolId() != null) {
+            ToolInstanceRepository.findByIdWithTemplateAndContract(document.getToolId())
+                    .ifPresent(allTools::add);
         }
 
-        var excelDto = excelContractMapper.toExcelContractDto(document, ToolInstance, client);
+        // Передаём список (mapper сам возьмёт первые 5)
+        var excelDto = excelContractMapper.toExcelContractDto(document, allTools, client);
         return excelGeneratorService.generateContractExcel(excelDto);
     }
 }
-
-
