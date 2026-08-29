@@ -25,7 +25,9 @@ public class SyncController {
     }
 
     @GetMapping("/pull")
-    public ResponseEntity<SyncPullResponse> pullSync(@RequestParam("since") long since) {
-        return ResponseEntity.ok(syncService.pullSync(since));
+    public ResponseEntity<SyncPullResponse> pullSync(
+            @RequestParam(value = "since", required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.Instant since,
+            @RequestParam(value = "branchId") Long branchId) {
+        return ResponseEntity.ok(syncService.pullSync(since, branchId));
     }
 }

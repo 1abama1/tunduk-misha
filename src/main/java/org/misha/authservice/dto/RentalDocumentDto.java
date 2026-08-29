@@ -16,5 +16,6 @@ public record RentalDocumentDto(
                 LocalDateTime terminatedAt,
                 String terminationReason,
                 ContractStatus status,
-                String comment) {
+                String comment,
+                String offlineId) {
 }

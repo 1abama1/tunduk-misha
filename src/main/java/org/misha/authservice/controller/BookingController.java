@@ -48,4 +48,10 @@ public class BookingController {
     public ResponseEntity<List<BookingDto>> getByToolInstance(@PathVariable Long toolInstanceId) {
         return ResponseEntity.ok(bookingService.getByToolInstance(toolInstanceId));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBooking(@PathVariable UUID id) {
+        bookingService.deleteBooking(id);
+        return ResponseEntity.noContent().build();
+    }
 }

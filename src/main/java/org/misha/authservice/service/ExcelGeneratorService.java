@@ -113,8 +113,7 @@ public class ExcelGeneratorService {
             set(sheet, "J20", dto.client().registrationAddress().street());
         }
         // Фактический: регион → A21, улица → I21
-        if (dto.client().livingAddress() != null &&
-            !dto.client().livingAddress().equals(dto.client().registrationAddress())) {
+        if (dto.client().livingAddress() != null) {
             set(sheet, "A21", dto.client().livingAddress().region());
             set(sheet, "I21", dto.client().livingAddress().street());
         }
@@ -145,7 +144,7 @@ public class ExcelGeneratorService {
         //   H-J (I)  = Кол-Во  (записываем в I = col 8)
         //   K-M      = Завод. или индеф. № (записываем в K = col 10)
         //   N-O      = Стоимость оборудования (записываем в N = col 13)
-        int firstDataRow = 20; // Excel row 21 → 0-based index 20
+        int firstDataRow = 19; // Excel row 20 → 0-based index 19
 
         java.util.List<org.misha.authservice.dto.excel.ToolExcelDto> tools =
                 dto.tools() != null ? dto.tools() : java.util.List.of();

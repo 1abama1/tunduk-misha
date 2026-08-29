@@ -114,4 +114,12 @@ public class BookingService {
                 .map(BookingDto::fromEntity)
                 .orElseThrow(() -> new AppException("BOOKING_NOT_FOUND", "Booking not found", HttpStatus.NOT_FOUND));
     }
+
+    @Transactional
+    public void deleteBooking(UUID id) {
+        if (!bookingRepository.existsById(id)) {
+            throw new AppException("BOOKING_NOT_FOUND", "Booking not found", HttpStatus.NOT_FOUND);
+        }
+        bookingRepository.deleteById(id);
+    }
 }

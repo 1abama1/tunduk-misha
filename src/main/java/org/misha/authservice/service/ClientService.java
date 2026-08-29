@@ -37,13 +37,14 @@ public class ClientService {
     @Transactional
     public ClientDto create(CreateClientRequest req) {
 
-        if (clientRepository.existsByWhatsappPhone(req.whatsappPhone()))
-            throw new AppException("PHONE_EXISTS", "Телефон уже используется!", HttpStatus.CONFLICT);
+        String normPhone = normalizePhone(req.whatsappPhone());
+        if (normPhone != null && clientRepository.existsByWhatsappPhone(normPhone))
+            throw new AppException("PHONE_EXISTS", "Клиент с таким номером уже существует!", HttpStatus.CONFLICT);
 
         Client client = Client.builder()
                 .fullName(req.fullName())
-                .whatsappPhone(req.whatsappPhone())
-                .additionalPhone(req.additionalPhone())
+                .whatsappPhone(normPhone)
+                .additionalPhone(normalizePhone(req.additionalPhone()))
                 .registrationAddress(toAddress(req.registrationAddress()))
                 .livingAddress(toAddress(req.livingAddress()))
                 .objectAddress(req.objectAddress())
@@ -104,17 +105,37 @@ public class ClientService {
         });
     }
 
+    private String normalizePhone(String phone) {
+        if (phone == null || phone.isBlank()) return null;
+        String digits = phone.replaceAll("\\D", "");
+        if (digits.startsWith("0") && digits.length() == 10) {
+            return "996" + digits.substring(1);
+        }
+        if (digits.length() == 9) {
+            return "996" + digits;
+        }
+        return digits.isEmpty() ? null : digits;
+    }
+
     @Transactional
     public ClientDto update(Long id, UpdateClientRequest req) {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new AppException("CLIENT_NOT_FOUND", "Клиент не найден", HttpStatus.NOT_FOUND));
 
+        if (req.whatsappPhone() != null) {
+            String normPhone = normalizePhone(req.whatsappPhone());
+            if (normPhone != null && !normPhone.equals(client.getWhatsappPhone())) {
+                if (clientRepository.existsByWhatsappPhoneAndIdNot(normPhone, id)) {
+                    throw new AppException("PHONE_EXISTS", "Клиент с таким номером (WhatsApp) уже существует!", HttpStatus.CONFLICT);
+                }
+                client.setWhatsappPhone(normPhone);
+            }
+        }
+        
         if (req.fullName() != null)
             client.setFullName(req.fullName());
-        if (req.whatsappPhone() != null)
-            client.setWhatsappPhone(req.whatsappPhone());
         if (req.additionalPhone() != null)
-            client.setAdditionalPhone(req.additionalPhone());
+            client.setAdditionalPhone(normalizePhone(req.additionalPhone()));
         if (req.registrationAddress() != null)
             client.setRegistrationAddress(toAddress(req.registrationAddress()));
         if (req.livingAddress() != null)

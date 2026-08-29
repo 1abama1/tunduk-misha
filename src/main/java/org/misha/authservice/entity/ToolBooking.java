@@ -15,7 +15,16 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@org.hibernate.annotations.SQLDelete(sql = "UPDATE tool_bookings SET is_deleted = true, deleted_at = NOW(), updated_at = NOW() WHERE id = ?")
+@org.hibernate.annotations.SQLRestriction("is_deleted = false")
 public class ToolBooking {
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

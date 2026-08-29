@@ -128,7 +128,8 @@ public class AdminClientService {
                         doc.getTerminatedAt(),
                         doc.getTerminationReason(),
                         doc.getStatus(),
-                        doc.getComment()))
+                        doc.getComment(),
+                        doc.getOfflineId()))
                 .toList();
     }
 
@@ -152,7 +153,8 @@ public class AdminClientService {
                         doc.getTerminatedAt(),
                         doc.getTerminationReason(),
                         doc.getStatus(),
-                        doc.getComment()))
+                        doc.getComment(),
+                        doc.getOfflineId()))
                 .toList();
     }
 

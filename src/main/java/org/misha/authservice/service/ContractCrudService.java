@@ -260,6 +260,7 @@ public class ContractCrudService {
                 doc.getTerminatedAt(),
                 doc.getTerminationReason(),
                 doc.getStatus(),
-                doc.getComment());
+                doc.getComment(),
+                doc.getOfflineId());
     }
 }

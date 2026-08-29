@@ -37,6 +37,7 @@ public class SyncService {
     private final ToolCategoryRepository categoryRepository;
     private final ToolTemplateRepository templateRepository;
     private final ClientMapper clientMapper;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Transactional
     public ContractSyncDto.SyncResponse syncContracts(ContractSyncDto syncDto) {
@@ -110,36 +111,58 @@ public class SyncService {
     }
 
     @Transactional(readOnly = true)
-    public SyncPullResponse pullSync(long sinceMillis) {
-        LocalDateTime since = LocalDateTime.ofInstant(Instant.ofEpochMilli(sinceMillis), ZoneId.systemDefault());
+    public SyncPullResponse pullSync(Instant sinceMillis, Long branchId) {
+        if (sinceMillis != null && Instant.now().minus(java.time.Duration.ofDays(90)).isAfter(sinceMillis)) {
+            return SyncPullResponse.builder()
+                .fullSyncRequired(true)
+                .serverTimestamp(Instant.now())
+                .build();
+        }
+        LocalDateTime since = sinceMillis != null ? LocalDateTime.ofInstant(sinceMillis, ZoneId.systemDefault()) : LocalDateTime.of(1970, 1, 1, 0, 0);
 
         var clients = clientRepository.findByUpdatedAtAfter(since).stream()
                 .map(clientMapper::toDto)
                 .toList();
+        List<Long> deletedClientIds = jdbcTemplate.queryForList(
+            "SELECT id FROM clients WHERE is_deleted = true AND deleted_at > ?", Long.class, since);
 
         var tools = ToolInstanceRepository.findByUpdatedAtAfter(since).stream()
                 .map(ToolDto::fromEntity)
                 .toList();
+        List<Long> deletedToolIds = jdbcTemplate.queryForList(
+            "SELECT id FROM tool_instances WHERE is_deleted = true AND deleted_at > ?", Long.class, since);
 
         var categories = categoryRepository.findByUpdatedAtAfter(since).stream()
                 .map(c -> new CategoryDto(c.getId(), c.getName()))
                 .toList();
+        List<java.util.UUID> deletedCategoryIds = jdbcTemplate.queryForList(
+            "SELECT id FROM tool_categories WHERE is_deleted = true AND deleted_at > ?", java.util.UUID.class, since);
 
         var templates = templateRepository.findByUpdatedAtAfter(since).stream()
                 .map(t -> new TemplateDto(t.getId(), t.getName(), t.getCategory() != null ? t.getCategory().getId() : null))
                 .toList();
+        List<java.util.UUID> deletedTemplateIds = jdbcTemplate.queryForList(
+            "SELECT id FROM tool_templates WHERE is_deleted = true AND deleted_at > ?", java.util.UUID.class, since);
 
         var documents = documentRepository.findByUpdatedAtAfter(since).stream()
                 .map(this::toDto)
                 .toList();
+        List<Long> deletedDocumentIds = jdbcTemplate.queryForList(
+            "SELECT id FROM rental_documents WHERE is_deleted = true AND deleted_at > ?", Long.class, since);
 
         return SyncPullResponse.builder()
                 .clients(clients)
+                .deletedClientIds(deletedClientIds)
                 .tools(tools)
+                .deletedToolIds(deletedToolIds)
                 .categories(categories)
+                .deletedCategoryIds(deletedCategoryIds)
                 .templates(templates)
+                .deletedTemplateIds(deletedTemplateIds)
                 .documents(documents)
-                .lastSyncTimestamp(System.currentTimeMillis())
+                .deletedDocumentIds(deletedDocumentIds)
+                .serverTimestamp(Instant.now())
+                .fullSyncRequired(false) // This can be customized based on 90 days policy
                 .build();
     }
 
@@ -156,7 +179,8 @@ public class SyncService {
                 doc.getTerminatedAt(),
                 doc.getTerminationReason(),
                 doc.getStatus(),
-                doc.getComment());
+                doc.getComment(),
+                doc.getOfflineId());
     }
 }
 

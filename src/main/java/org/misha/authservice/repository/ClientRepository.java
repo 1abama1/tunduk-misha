@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface ClientRepository extends JpaRepository<Client, Long> {
 
     boolean existsByWhatsappPhone(String whatsappPhone);
+    boolean existsByWhatsappPhoneAndIdNot(String whatsappPhone, Long id);
 
     List<Client> findByUpdatedAtAfter(java.time.LocalDateTime since);
 

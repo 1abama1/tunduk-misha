@@ -15,7 +15,16 @@ import java.util.UUID;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(exclude = {"templates", "subCategories", "parentCategory"})
+@org.hibernate.annotations.SQLDelete(sql = "UPDATE tool_categories SET is_deleted = true, deleted_at = NOW(), updated_at = NOW() WHERE id = ?")
+@org.hibernate.annotations.SQLRestriction("is_deleted = false")
 public class ToolCategory {
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private java.time.LocalDateTime deletedAt;
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @EqualsAndHashCode.Include
