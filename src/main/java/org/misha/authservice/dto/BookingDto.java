@@ -19,17 +19,39 @@ public record BookingDto(
         LocalDateTime createdAt
 ) {
     public static BookingDto fromEntity(ToolBooking b) {
+        UUID templateId = null;
+        String templateName = null;
+        if (b.getTemplate() != null) {
+            try {
+                templateId = b.getTemplate().getId();
+                templateName = b.getTemplate().getName();
+            } catch (jakarta.persistence.EntityNotFoundException e) {
+                // Ignore soft-deleted entity proxy initialization failure
+            }
+        }
+
+        Long toolInstanceId = null;
+        Integer toolInstanceNumber = null;
+        if (b.getToolInstance() != null) {
+            try {
+                toolInstanceId = b.getToolInstance().getId();
+                toolInstanceNumber = b.getToolInstance().getInstanceNumber();
+            } catch (jakarta.persistence.EntityNotFoundException e) {
+                // Ignore soft-deleted entity proxy initialization failure
+            }
+        }
+
         return new BookingDto(
                 b.getId(),
                 b.getClientName(),
                 b.getClientPhone(),
-                b.getTemplate().getId(),
-                b.getTemplate().getName(),
-                b.getToolInstance().getId(),
-                b.getToolInstance().getInstanceNumber(),
+                templateId,
+                templateName,
+                toolInstanceId,
+                toolInstanceNumber,
                 b.getStartDateTime(),
                 b.getEndDateTime(),
-                b.getStatus().name(),
+                b.getStatus() != null ? b.getStatus().name() : null,
                 b.getComment(),
                 b.getCreatedAt()
         );

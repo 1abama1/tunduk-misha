@@ -38,10 +38,12 @@ public class ToolBooking {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "template_id", nullable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private ToolTemplate template;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tool_instance_id", nullable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private ToolInstance toolInstance;
 
     @Column(name = "start_date_time", nullable = false)

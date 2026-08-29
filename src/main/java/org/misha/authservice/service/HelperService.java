@@ -66,11 +66,13 @@ public class HelperService {
         else if (clean.length() == SHORT_LENGTH) {
             clean = KG_COUNTRY_CODE + clean;
         }
-        // +996700123456 или 996700123456 → уже готов, оставляем
-        // Остальные форматы (10 цифр не с 0, 11 цифр и т.д.) — невалидны для КР
+        // РФ: 89501234567 (11 цифр, ведущая 8) → 79501234567
+        else if (clean.length() == 11 && clean.startsWith("8")) {
+            clean = "7" + clean.substring(1);
+        }
 
-        // Итоговая валидация: 12 цифр, начинается на 996
-        if (clean.length() == INTL_LENGTH && clean.startsWith(KG_COUNTRY_CODE)) {
+        // Если после всех преобразований номер имеет от 10 до 15 цифр, считаем его валидным международным
+        if (clean.length() >= 10 && clean.length() <= 15) {
             return clean;
         }
 
