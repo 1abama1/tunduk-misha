@@ -37,11 +37,7 @@ public class AuthController {
         return buildResponse(response);
     }
 
-    @GetMapping("/refresh")
-    public ResponseEntity<AuthResponse> refreshGet(@RequestParam(name = "refreshToken") String refreshToken) {
-        AuthResponse response = authFacade.refresh(refreshToken);
-        return buildResponse(response);
-        }
+
 
     private ResponseEntity<AuthResponse> buildResponse(AuthResponse response) {
         HttpHeaders headers = new HttpHeaders();

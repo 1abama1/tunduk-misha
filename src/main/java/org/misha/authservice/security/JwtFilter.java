@@ -4,10 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.misha.authservice.entity.Role;
-import org.misha.authservice.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,20 +15,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
-    @Autowired
-    private JwtUtil jwtUtil;
-    @Autowired
-    private UserRepository userRepository;
 
-    public JwtFilter(JwtUtil jwtUtil) {
-        this.jwtUtil = jwtUtil;
-    }
+    private final JwtUtil jwtUtil;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -43,21 +35,13 @@ public class JwtFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             try {
                 String subject = jwtUtil.validateAccessToken(token);
-                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                try {
-                    Long userId = Long.valueOf(subject);
-                    var userOpt = userRepository.findById(userId);
-                    if (userOpt.isPresent()) {
-                        Role role = userOpt.get().getRole();
-                        authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
-                    } else {
-                        log.debug("User not found for subject: {}", subject);
-                    }
-                } catch (NumberFormatException e) {
-                    log.debug("Invalid user ID format in JWT subject: {}", subject, e);
-                } catch (Exception e) {
-                    log.debug("Error loading user for JWT subject: {}", subject, e);
-                }
+
+                // Role is embedded in the JWT claim — no DB call needed
+                String role = jwtUtil.getRoleClaim(token);
+                List<SimpleGrantedAuthority> authorities = role != null
+                        ? List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                        : List.of();
+
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(subject, null, authorities);
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -72,8 +56,12 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
-        // Skip JWT only for public auth endpoints
-        return path.equals("/api/auth/register") || path.equals("/api/auth/login") || path.equals("/api/auth/refresh")
-                || path.equals("/api/v1/auth/register") || path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/refresh");
+        // Keep whitelist in sync with SecurityConfig via PublicEndpoints (single source of truth)
+        for (String publicPath : PublicEndpoints.PATHS) {
+            if (path.equals(publicPath)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -34,11 +34,8 @@ public class EmailPhoneAuthenticationProvider implements AuthenticationProvider 
             user = userRepository.findByPhone(principal).orElse(null);
         }
         if (user == null) {
-            // try email/phone fallback (client may send in either field to controller then pass here)
-            user = userRepository.findByEmail(principal).orElse(userRepository.findByPhone(principal).orElse(null));
-        }
-        if (user == null) {
-            throw new BadCredentialsException("User not found");
+            // Unified message for both cases — prevents user enumeration
+            throw new BadCredentialsException("Invalid credentials");
         }
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid credentials");

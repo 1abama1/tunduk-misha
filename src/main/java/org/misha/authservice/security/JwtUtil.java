@@ -25,12 +25,22 @@ public class JwtUtil {
     }
 
     public String generateAccessToken(String subject) {
-        return Jwts.builder()
+        return generateAccessToken(subject, null);
+    }
+
+    public String generateAccessToken(String subject, String role) {
+        var builder = Jwts.builder()
                 .setSubject(subject)
                 .claim("type", "access")
-                .setExpiration(new Date(System.currentTimeMillis() + accessExpiration))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+                .setExpiration(new Date(System.currentTimeMillis() + accessExpiration));
+        if (role != null) {
+            builder.claim("role", role);
+        }
+        return builder.signWith(key, SignatureAlgorithm.HS256).compact();
+    }
+
+    public String getRoleClaim(String token) {
+        return (String) parse(token).getBody().get("role");
     }
 
     public String generateRefreshToken(String subject) {

@@ -15,6 +15,7 @@ public class ContractTableDto {
     private Long id;
     private String contractNumber;
 
+    private Long clientId;        // id клиента — нужен фронту для навигации и кеширования
     private String clientName;
     private String toolName;
     private String serialNumber;

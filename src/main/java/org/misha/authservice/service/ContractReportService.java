@@ -31,11 +31,11 @@ public class ContractReportService {
         return list.stream().map(c -> {
             String clientName = c.getClient() != null && c.getClient().getFullName() != null
                     ? c.getClient().getFullName()
-                    : "вЂ”";
+                    : "—";
 
             List<ToolInstance> tools = c.getTools();
 
-            String toolName = "вЂ”";
+            String toolName = "—";
             if (!tools.isEmpty()) {
                 if (tools.size() == 1) {
                     toolName = getDisplayName(tools.get(0));
@@ -43,22 +43,23 @@ public class ContractReportService {
                     toolName = tools.stream()
                             .map(this::getDisplayName)
                             .reduce((a, b) -> a + ", " + b)
-                            .orElse("вЂ”");
+                            .orElse("—");
                 }
             } else if (c.getToolId() != null) {
                 toolName = ToolInstanceRepository.findByIdWithTemplateAndContract(c.getToolId())
                         .map(this::getDisplayName)
-                        .orElse("вЂ”");
+                        .orElse("—");
             }
 
             String startDate = c.getStartDateTime() != null
                     ? c.getStartDateTime().toString()
-                    : "вЂ”";
+                    : "—";
 
             Double balance = c.getAmount() != null ? c.getAmount() : 0.0;
 
             return ActiveContractRowDto.builder()
                     .id(c.getId())
+                    .clientId(c.getClient() != null ? c.getClient().getId() : null)
                     .clientName(clientName)
                     .toolName(toolName)
                     .startDate(startDate)
@@ -133,7 +134,8 @@ public class ContractReportService {
         return ContractTableDto.builder()
                 .id(doc.getId())
                 .contractNumber(doc.getContractNumber())
-                .clientName(doc.getClient() != null ? doc.getClient().getFullName() : "вЂ”")
+                .clientId(doc.getClient() != null ? doc.getClient().getId() : null)
+                .clientName(doc.getClient() != null ? doc.getClient().getFullName() : "—")
                 .toolName(toolName)
                 .serialNumber(serialNumber)
                 .startDateTime(doc.getStartDateTime())

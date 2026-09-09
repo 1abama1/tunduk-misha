@@ -1,5 +1,6 @@
 package org.misha.authservice.service;
 
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.misha.authservice.dto.AuthResponse;
 import org.misha.authservice.dto.LoginRequest;
@@ -57,24 +58,28 @@ public class AuthFacade {
             String subject = jwtUtil.validateRefreshToken(refreshToken);
             String oldJti = jwtUtil.getJti(refreshToken);
             User user = userRepository.findById(Long.valueOf(subject))
-                    .orElseThrow(() -> new AppException("USER_NOT_FOUND", "User not found", HttpStatus.UNAUTHORIZED));
+                    .orElseThrow(() -> new AppException("INVALID_REFRESH_TOKEN", "Invalid refresh token", HttpStatus.UNAUTHORIZED));
 
-            refreshTokenRepository.findByJti(oldJti)
-                    .ifPresentOrElse(token -> {
-                        if (!token.isRevoked()) {
-                            authService.revokeRefresh(token);
-                        } else {
-                            refreshTokenRepository.deleteByUser(user);
-                        }
-                    }, () -> refreshTokenRepository.deleteByUser(user));
+            RefreshToken stored = refreshTokenRepository.findByJti(oldJti)
+                    // JTI missing in DB means the token was already rotated/purged — reject
+                    .orElseThrow(() -> new AppException("INVALID_REFRESH_TOKEN", "Invalid refresh token", HttpStatus.UNAUTHORIZED));
+
+            if (stored.isRevoked()) {
+                // Reuse of a revoked token indicates theft: kill the whole session and reject,
+                // instead of issuing fresh tokens to the attacker
+                refreshTokenRepository.deleteByUser(user);
+                throw new AppException("REFRESH_TOKEN_REUSE", "Session terminated", HttpStatus.UNAUTHORIZED);
+            }
+
+            authService.revokeRefresh(stored);
 
             RefreshToken newEntity = authService.createRefreshForUser(user);
             String newRefresh = jwtUtil.generateRefreshToken(subject, newEntity.getJti());
-            String access = jwtUtil.generateAccessToken(subject);
+            String access = authService.issueTokenForUser(user);
             return new AuthResponse(user.getId(), access, newRefresh);
         } catch (AppException ex) {
             throw ex;
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             throw new AppException("INVALID_REFRESH_TOKEN", "Invalid refresh token", HttpStatus.UNAUTHORIZED);
         }
     }
