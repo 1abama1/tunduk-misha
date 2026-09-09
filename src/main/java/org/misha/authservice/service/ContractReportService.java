@@ -57,6 +57,17 @@ public class ContractReportService {
 
             Double balance = c.getAmount() != null ? c.getAmount() : 0.0;
 
+            Double dailyPrice = 0.0;
+            if (c.getDailyPrice() != null) {
+                dailyPrice = c.getDailyPrice();
+            } else if (!tools.isEmpty() && tools.get(0).getTemplate() != null && tools.get(0).getTemplate().getDailyRentalPrice() != null) {
+                dailyPrice = tools.get(0).getTemplate().getDailyRentalPrice().doubleValue();
+            } else if (c.getToolId() != null) {
+                dailyPrice = ToolInstanceRepository.findByIdWithTemplateAndContract(c.getToolId())
+                        .map(t -> t.getTemplate() != null && t.getTemplate().getDailyRentalPrice() != null ? t.getTemplate().getDailyRentalPrice().doubleValue() : 0.0)
+                        .orElse(0.0);
+            }
+
             return ActiveContractRowDto.builder()
                     .id(c.getId())
                     .clientId(c.getClient() != null ? c.getClient().getId() : null)
@@ -64,6 +75,7 @@ public class ContractReportService {
                     .toolName(toolName)
                     .startDate(startDate)
                     .balance(balance)
+                    .dailyPrice(dailyPrice)
                     .build();
         }).toList();
     }

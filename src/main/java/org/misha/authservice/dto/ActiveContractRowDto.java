@@ -14,5 +14,6 @@ public class ActiveContractRowDto {
     private String toolName;
     private String startDate;
     private Double balance;
+    private Double dailyPrice;
 }
 
