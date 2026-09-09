@@ -20,8 +20,8 @@ public interface ToolInstanceRepository extends JpaRepository<ToolInstance, Long
 
     List<ToolInstance> findByTemplateId(UUID templateId);
     
-    boolean existsByInventoryNumber(String inventoryNumber);
-    
+    @Query(value = "SELECT COUNT(*) > 0 FROM tool_instances WHERE inventory_number = :inventoryNumber", nativeQuery = true)
+    boolean existsByInventoryNumber(@Param("inventoryNumber") String inventoryNumber);
     List<ToolInstance> findByUpdatedAtAfter(LocalDateTime since);
 
     @Query(value = "SELECT * FROM tool_instances WHERE created_at::date = CURRENT_DATE", nativeQuery = true)
