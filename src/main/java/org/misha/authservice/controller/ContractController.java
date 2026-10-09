@@ -62,7 +62,7 @@ public class ContractController {
     }
 
     @PostMapping("/{id}/close")
-    public ResponseEntity<?> close(@PathVariable Long id, @RequestBody(required = false) CloseContractRequest req) {
+    public ResponseEntity<?> close(@PathVariable Long id, @Valid @RequestBody(required = false) CloseContractRequest req) {
         contractService.closeContract(id, req);
         return ResponseEntity.ok(Map.of(
                 "status", "closed",
@@ -104,6 +104,8 @@ public class ContractController {
                     .contentType(MediaType.parseMediaType(
                             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                     .body(file);
+        } catch (org.misha.authservice.exception.AppException | org.misha.authservice.exception.NotFoundException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new RuntimeException("Не удалось сгенерировать файл: " + ex.getMessage(), ex);
         }

@@ -30,6 +30,7 @@ public class AdminClientController {
 
     private final AdminClientService adminClientService;
     private final ClientService clientService;
+    private final org.misha.authservice.service.IdempotencyService idempotency;
     private final ClientCardService clientCardService;
     private final ClientImageService clientImageService;
     private final ExcelClientImportService excelClientImportService;
@@ -60,8 +61,8 @@ public class AdminClientController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<ClientDto> createClient(@Valid @RequestBody CreateClientRequest req) {
-        return ResponseEntity.ok(clientService.create(req));
+    public ResponseEntity<ClientDto> createClient(@Valid @RequestBody CreateClientRequest req, @RequestHeader(value="Idempotency-Key", required=false) String operationKey) {
+        return ResponseEntity.ok(idempotency.execute(operationKey, req, ClientDto.class, () -> clientService.create(req)));
     }
 
     @PostMapping("/import/excel")

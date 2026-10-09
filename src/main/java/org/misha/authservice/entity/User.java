@@ -28,6 +28,7 @@ public class User {
     @Column(unique = true)
     private String phone;
     
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String passwordHash;
 
     private boolean consentPersonalData;

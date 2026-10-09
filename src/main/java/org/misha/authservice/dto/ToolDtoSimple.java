@@ -14,8 +14,13 @@ public record ToolDtoSimple(
         BigDecimal purchasePrice,
         BigDecimal dailyPrice,
         String status,
-        UUID activeBookingId
+        UUID activeBookingId,
+        UUID templateId
 ) {
+    @com.fasterxml.jackson.annotation.JsonProperty("dailyRentalPrice")
+    public BigDecimal dailyRentalPrice() { return dailyPrice; }
+    @com.fasterxml.jackson.annotation.JsonProperty("depositAmount")
+    public BigDecimal depositAmount() { return deposit; }
     public static ToolDtoSimple fromEntity(ToolInstance t) {
         return fromEntity(t, null);
     }
@@ -31,7 +36,8 @@ public record ToolDtoSimple(
                 t.getTemplate() != null ? t.getTemplate().getPurchasePrice() : null,
                 t.getTemplate() != null ? t.getTemplate().getDailyRentalPrice() : null,
                 t.getContract() != null ? "RENTED" : (activeBookingId != null ? "BOOKED" : (t.getStatus() != null ? t.getStatus().name() : "AVAILABLE")),
-                activeBookingId
+                activeBookingId,
+                t.getTemplate() != null ? t.getTemplate().getId() : null
         );
     }
 }

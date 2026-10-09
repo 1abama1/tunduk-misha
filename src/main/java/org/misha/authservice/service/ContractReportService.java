@@ -139,6 +139,12 @@ public class ContractReportService {
             serialNumber = ToolInstance.getInventoryNumber();
         }
 
+        if (!doc.getHistoricalToolIds().isEmpty()) {
+            var historyTools = ToolInstanceRepository.findAllById(doc.getHistoricalToolIds());
+            toolName = historyTools.stream().map(this::getDisplayName).collect(java.util.stream.Collectors.joining(", "));
+            serialNumber = historyTools.stream().map(t -> java.util.Objects.toString(t.getInventoryNumber(), ""))
+                .collect(java.util.stream.Collectors.joining(", "));
+        }
         LocalDateTime actualReturn = doc.getReturnDate() != null
                 ? doc.getReturnDate()
                 : doc.getTerminatedAt();

@@ -27,9 +27,10 @@ public class SyncPullResponse {
     private List<CategoryDto> categories;
     private List<java.util.UUID> deletedCategoryIds; // Wait, Category ID is UUID. Prompt says List<Long>, but ToolCategory uses UUID. Let's use List<java.util.UUID> or just List<String>. Let's check ToolCategory.java -> UUID id.
 
-    private List<TemplateDto> templates;
+    private List<TemplateFullDto> templates;
     private List<java.util.UUID> deletedTemplateIds;
 
     private java.time.Instant serverTimestamp;
     private boolean fullSyncRequired;
+    private boolean fullSnapshot;
 }

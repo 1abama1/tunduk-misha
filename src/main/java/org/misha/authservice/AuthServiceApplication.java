@@ -10,6 +10,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class  AuthServiceApplication {
 
     public static void main(String[] args) {
+        // Rental API uses local wall time. Match the desktop's businessDateTime.
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Bishkek"));
         SpringApplication.run(AuthServiceApplication.class, args);
     }
 

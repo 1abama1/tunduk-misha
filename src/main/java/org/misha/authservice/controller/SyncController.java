@@ -18,10 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class SyncController {
 
     private final SyncService syncService;
+    private final org.misha.authservice.service.IdempotencyService idempotency;
 
     @PostMapping("/contracts")
-    public ResponseEntity<ContractSyncDto.SyncResponse> syncContracts(@RequestBody ContractSyncDto syncDto) {
-        return ResponseEntity.ok(syncService.syncContracts(syncDto));
+    public ResponseEntity<ContractSyncDto.SyncResponse> syncContracts(@jakarta.validation.Valid @RequestBody ContractSyncDto syncDto,
+            @org.springframework.web.bind.annotation.RequestHeader(value="Idempotency-Key", required=false) String operationKey) {
+        return ResponseEntity.ok(idempotency.execute(operationKey, syncDto, ContractSyncDto.SyncResponse.class, () -> syncService.syncContracts(syncDto)));
     }
 
     @GetMapping("/pull")

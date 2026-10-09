@@ -30,6 +30,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ContractCrudService {
+    private final RentalWriteLock rentalWriteLock;
 
     private final ClientRepository clientRepository;
     private final ToolInstanceRepository toolInstanceRepository;
@@ -68,6 +69,23 @@ public class ContractCrudService {
 
     @Transactional
     public RentalDocumentDto createContract(CreateContractRequest req) {
+        rentalWriteLock.acquire();
+        if (req.offlineId() != null && !req.offlineId().isBlank()) {
+            var existing = documentRepository.findByOfflineId(req.offlineId());
+            if (existing.isPresent()) {
+                var previous = existing.get();
+                var requestedIds = new java.util.HashSet<Long>();
+                if (req.toolIds() != null && !req.toolIds().isEmpty()) requestedIds.addAll(req.toolIds());
+                else if (req.toolId() != null) requestedIds.add(req.toolId());
+                var previousIds = new java.util.HashSet<>(previous.getHistoricalToolIds());
+                if (previous.getToolId() != null) previousIds.add(previous.getToolId());
+                if (previous.getClient() == null || !Objects.equals(previous.getClient().getId(), req.clientId())
+                    || !previousIds.equals(requestedIds)
+                    || (req.startDateTime() != null && !req.startDateTime().equals(previous.getStartDateTime())))
+                    throw new AppException("OFFLINE_ID_CONFLICT", "Этот offlineId уже принадлежит другому запросу", HttpStatus.CONFLICT);
+                return toDto(previous);
+            }
+        }
         if (req.clientId() == null) {
             throw new BadRequestException("Не передан clientId");
         }
@@ -89,6 +107,7 @@ public class ContractCrudService {
         Client client = clientRepository.findById(req.clientId())
                 .orElseThrow(() -> new NotFoundException("Клиент не найден"));
 
+        RentalValidation.client(client);
         java.util.List<ToolInstance> toolsToRent = toolInstanceRepository.findAllById(idsToRent);
         if (toolsToRent.size() != idsToRent.size()) {
             throw new NotFoundException("Один или несколько инструментов не найдены");
@@ -105,7 +124,7 @@ public class ContractCrudService {
         RentalDocument doc = RentalDocument.builder()
                 .client(client)
                 .contractNumber(contractNumber)
-                .startDateTime(LocalDateTime.now())
+                .startDateTime(req.startDateTime() != null ? req.startDateTime() : LocalDateTime.now())
                 .amount(null)
                 .dailyPrice(null)
                 .offlineId(req.offlineId())
@@ -118,6 +137,7 @@ public class ContractCrudService {
             toolInstanceRepository.save(tool);
         }
 
+        doc.getHistoricalToolIds().addAll(idsToRent);
         doc.setToolId(toolsToRent.get(0).getId());
         documentRepository.save(doc);
 
@@ -131,6 +151,7 @@ public class ContractCrudService {
 
     @Transactional
     public void closeContract(Long contractId, CloseContractRequest req) {
+        rentalWriteLock.acquire();
         RentalDocument doc = documentRepository.findById(contractId)
                 .orElseThrow(() -> new NotFoundException("Договор не найден"));
 
@@ -138,7 +159,9 @@ public class ContractCrudService {
             throw new AppException("CONTRACT_ALREADY_CLOSED", "Договор уже завершён", HttpStatus.BAD_REQUEST);
         }
 
+        RentalValidation.close(doc, req);
         List<ToolInstance> tools = toolInstanceRepository.findByContractId(contractId);
+        tools.forEach(t -> doc.getHistoricalToolIds().add(t.getId()));
 
         if (!tools.isEmpty()) {
             doc.setToolId(tools.get(0).getId());
@@ -148,6 +171,7 @@ public class ContractCrudService {
 
         for (ToolInstance tool : tools) {
             tool.setContract(null);
+            if (isBroken) tool.setStatus(org.misha.authservice.entity.ToolInstanceStatus.IN_REPAIR);
             toolInstanceRepository.save(tool);
         }
 
@@ -176,6 +200,7 @@ public class ContractCrudService {
 
     @Transactional
     public RentalDocumentDto update(Long id, UpdateContractRequest req) {
+        rentalWriteLock.acquire();
         RentalDocument doc = documentRepository.findById(id)
                 .orElseThrow(() -> new AppException("CONTRACT_NOT_FOUND", "Договор не найден", HttpStatus.NOT_FOUND));
 
@@ -199,6 +224,7 @@ public class ContractCrudService {
 
     @Transactional
     public void restoreContract(Long contractId) {
+        rentalWriteLock.acquire();
         RentalDocument doc = documentRepository.findById(contractId)
                 .orElseThrow(() -> new AppException("CONTRACT_NOT_FOUND", "Договор не найден", HttpStatus.NOT_FOUND));
 
@@ -214,6 +240,14 @@ public class ContractCrudService {
             throw new AppException("TOOL_ID_MISSING", "Невозможно восстановить договор — не найден инструмент", HttpStatus.BAD_REQUEST);
         }
 
+        RentalValidation.client(doc.getClient());
+        java.util.Set<Long> restoreIds = new java.util.LinkedHashSet<>(doc.getHistoricalToolIds());
+        restoreIds.add(doc.getToolId());
+        var restoreTools = toolInstanceRepository.findAllById(restoreIds);
+        if (restoreTools.size() != restoreIds.size()) throw new NotFoundException("Инструмент истории удалён");
+        restoreTools.forEach(toolRentalGuard::ensureAvailableForRental);
+        restoreTools.forEach(t -> t.setContract(doc));
+        toolInstanceRepository.saveAll(restoreTools);
         ToolInstance tool = toolInstanceRepository.findById(doc.getToolId())
                 .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "Инструмент не найден", HttpStatus.NOT_FOUND));
 
@@ -236,7 +270,7 @@ public class ContractCrudService {
 
     @Transactional(readOnly = true)
     public Page<RentalDocumentDto> getAll(int page, int size) {
-        Page<RentalDocument> docsPage = documentRepository.findAll(PageRequest.of(page, size));
+        Page<RentalDocument> docsPage = documentRepository.findAll(PageRequest.of(Math.max(0, page), Math.max(1, Math.min(1000, size))));
         return docsPage.map(this::toDto);
     }
 
@@ -248,19 +282,6 @@ public class ContractCrudService {
     }
 
     private RentalDocumentDto toDto(RentalDocument doc) {
-        return new RentalDocumentDto(
-                doc.getId(),
-                doc.getContractNumber(),
-                doc.getStartDateTime(),
-                doc.getDailyPrice(),
-                doc.getAmount(),
-                doc.getCreatedAt(),
-                doc.getClient() != null ? doc.getClient().getId() : null,
-                doc.getReturnDate(),
-                doc.getTerminatedAt(),
-                doc.getTerminationReason(),
-                doc.getStatus(),
-                doc.getComment(),
-                doc.getOfflineId());
+        return RentalDocumentDto.fromEntity(doc);
     }
 }

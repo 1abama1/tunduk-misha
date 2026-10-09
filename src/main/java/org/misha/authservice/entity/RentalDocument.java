@@ -71,19 +71,26 @@ public class RentalDocument {
     @Column(name = "offline_id")
     private String offlineId;
 
-    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "contract", fetch = FetchType.LAZY)
     @Builder.Default
     private List<ToolInstance> tools = new ArrayList<>();
+
+    @org.hibernate.annotations.BatchSize(size = 100)
+    @jakarta.persistence.ElementCollection
+    @jakarta.persistence.CollectionTable(name = "rental_document_tools", joinColumns = @JoinColumn(name = "document_id"))
+    @Column(name = "tool_id")
+    @Builder.Default
+    private java.util.Set<Long> historicalToolIds = new java.util.LinkedHashSet<>();
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     }
 
     /**
@@ -92,7 +99,8 @@ public class RentalDocument {
      * @return ACTIVE, CLOSED или TERMINATED
      */
     public ContractStatus getStatus() {
-        if (returnDate != null || terminatedAt != null) {
+        if (terminatedAt != null) return ContractStatus.TERMINATED;
+        if (returnDate != null) {
             return ContractStatus.CLOSED;
         }
         return ContractStatus.ACTIVE;

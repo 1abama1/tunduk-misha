@@ -11,6 +11,13 @@ import java.util.Optional;
 
 public interface ClientRepository extends JpaRepository<Client, Long> {
 
+    @Override
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "passport")
+    List<Client> findAll();
+    @Override
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = "passport")
+    org.springframework.data.domain.Page<Client> findAll(org.springframework.data.domain.Pageable pageable);
+
     boolean existsByWhatsappPhone(String whatsappPhone);
     boolean existsByWhatsappPhoneAndIdNot(String whatsappPhone, Long id);
 

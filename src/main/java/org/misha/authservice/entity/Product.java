@@ -29,10 +29,12 @@ public class Product {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trader_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private Trader trader;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private ToolCategory category;
 
     @Column(nullable = false)

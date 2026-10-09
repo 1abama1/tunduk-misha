@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DocumentDetailDto {
+    private String offlineId;
+    private LocalDateTime updatedAt;
+    private java.util.Set<Long> toolIds;
     private Long id;
     private String contractNumber;
     private Double amount;

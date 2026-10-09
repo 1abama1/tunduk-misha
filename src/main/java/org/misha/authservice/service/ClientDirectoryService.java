@@ -17,11 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ClientDirectoryService {
+    private final RentalWriteLock rentalWriteLock;
 
     private final ClientRepository clientRepository;
 
     @Transactional
     public ClientResponseDto create(ClientCreateRequest dto) {
+        rentalWriteLock.acquire();
         Client client = Client.builder()
                 .fullName(dto.fullName())
                 .whatsappPhone(dto.whatsappPhone())
@@ -62,6 +64,7 @@ public class ClientDirectoryService {
 
     @Transactional
     public ClientResponseDto update(Long id, org.misha.authservice.dto.client.ClientUpdateRequest dto) {
+        rentalWriteLock.acquire();
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
 
@@ -83,6 +86,7 @@ public class ClientDirectoryService {
 
     @Transactional
     public void addTag(Long clientId, String tag) {
+        rentalWriteLock.acquire();
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
 
@@ -97,6 +101,7 @@ public class ClientDirectoryService {
 
     @Transactional
     public void removeTag(Long clientId, String tag) {
+        rentalWriteLock.acquire();
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
 

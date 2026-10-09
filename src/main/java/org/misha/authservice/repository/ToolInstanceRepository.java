@@ -56,7 +56,7 @@ public interface ToolInstanceRepository extends JpaRepository<ToolInstance, Long
     @Query("SELECT t FROM ToolInstance t JOIN FETCH t.template WHERE t.contract.id = :contractId")
     List<ToolInstance> findByContractIdWithTemplate(@Param("contractId") Long contractId);
 
-    @Query("SELECT t FROM ToolInstance t JOIN FETCH t.template temp JOIN FETCH temp.category")
+    @Query("SELECT t FROM ToolInstance t JOIN FETCH t.template temp JOIN FETCH temp.category LEFT JOIN FETCH t.contract")
     List<ToolInstance> findAllWithTemplate();
 
     @Query("SELECT t FROM ToolInstance t WHERE t.template.id = :templateId AND t.status = 'AVAILABLE' AND t.id NOT IN (SELECT rd.toolId FROM RentalDocument rd WHERE rd.toolId = t.id AND rd.returnDate IS NULL AND rd.startDateTime <= :endDate AND (rd.returnDate >= :startDate OR rd.returnDate IS NULL))")

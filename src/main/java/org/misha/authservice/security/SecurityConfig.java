@@ -34,7 +34,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PublicEndpoints.PATHS).permitAll()
-                        .requestMatchers("/api/v1/tools/**").permitAll()
+                        .requestMatchers("/api/v1/tools/**", "/api/v1/sync/**", "/api/clients/**",
+                            "/api/tools/**", "/api/categories/**", "/api/templates/**", "/api/rent/**", "/api/bookings/**",
+                            "/api/contracts/**", "/api/documents/**", "/api/stats/**", "/api/helpers/**").hasRole("ADMIN")
                         .requestMatchers("/api/profile/me").authenticated()
                         .requestMatchers("/api/admin/contracts/excel", "/api/admin/contracts/*/excel", "/api/admin/contracts/*/excel/").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -44,6 +46,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(errors -> errors
+                    .authenticationEntryPoint((request, response, error) -> response.sendError(401, "Authentication required"))
+                    .accessDeniedHandler((request, response, error) -> response.sendError(403, "Access denied")))
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

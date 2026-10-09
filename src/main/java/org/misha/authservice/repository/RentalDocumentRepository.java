@@ -58,7 +58,11 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
 
   boolean existsByToolIdAndReturnDateIsNullAndTerminatedAtIsNull(Long toolId);
 
-  List<RentalDocument> findByToolIdOrderByStartDateTimeDesc(Long toolId);
+  @Query(value = "SELECT EXISTS (SELECT 1 FROM rental_document_tools WHERE tool_id = :toolId) OR EXISTS (SELECT 1 FROM rental_documents WHERE tool_id = :toolId)", nativeQuery = true)
+  boolean hasToolHistory(@Param("toolId") Long toolId);
+
+  @Query("SELECT d FROM RentalDocument d LEFT JOIN FETCH d.client WHERE d.toolId = :toolId OR :toolId MEMBER OF d.historicalToolIds ORDER BY d.startDateTime DESC")
+  List<RentalDocument> findByToolIdOrderByStartDateTimeDesc(@Param("toolId") Long toolId);
 
   @Query("""
       SELECT DISTINCT d FROM RentalDocument d
@@ -67,7 +71,7 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
       LEFT JOIN FETCH t.template tmpl
       LEFT JOIN FETCH tmpl.category
       WHERE (:clientId IS NULL OR c.id = :clientId)
-        AND (:toolId IS NULL OR t.id = :toolId OR d.toolId = :toolId)
+        AND (:toolId IS NULL OR t.id = :toolId OR d.toolId = :toolId OR :toolId member of d.historicalToolIds)
       ORDER BY d.startDateTime DESC
       """)
   List<RentalDocument> findHistoryWithoutDate(
@@ -81,7 +85,7 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
       LEFT JOIN FETCH t.template tmpl
       LEFT JOIN FETCH tmpl.category
       WHERE (:clientId IS NULL OR c.id = :clientId)
-        AND (:toolId IS NULL OR t.id = :toolId OR d.toolId = :toolId)
+        AND (:toolId IS NULL OR t.id = :toolId OR d.toolId = :toolId OR :toolId member of d.historicalToolIds)
         AND d.startDateTime >= :fromDate
       ORDER BY d.startDateTime DESC
       """)
@@ -97,7 +101,7 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
       LEFT JOIN FETCH t.template tmpl
       LEFT JOIN FETCH tmpl.category
       WHERE (:clientId IS NULL OR c.id = :clientId)
-        AND (:toolId IS NULL OR t.id = :toolId OR d.toolId = :toolId)
+        AND (:toolId IS NULL OR t.id = :toolId OR d.toolId = :toolId OR :toolId member of d.historicalToolIds)
         AND d.startDateTime < :toDate
       ORDER BY d.startDateTime DESC
       """)
@@ -113,7 +117,7 @@ public interface RentalDocumentRepository extends JpaRepository<RentalDocument, 
       LEFT JOIN FETCH t.template tmpl
       LEFT JOIN FETCH tmpl.category
       WHERE (:clientId IS NULL OR c.id = :clientId)
-        AND (:toolId IS NULL OR t.id = :toolId OR d.toolId = :toolId)
+        AND (:toolId IS NULL OR t.id = :toolId OR d.toolId = :toolId OR :toolId member of d.historicalToolIds)
         AND d.startDateTime >= :fromDate
         AND d.startDateTime < :toDate
       ORDER BY d.startDateTime DESC

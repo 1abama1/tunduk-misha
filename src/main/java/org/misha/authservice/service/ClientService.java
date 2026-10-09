@@ -28,6 +28,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ClientService {
+    private final RentalWriteLock rentalWriteLock;
 
     private final ClientRepository clientRepository;
     private final RentalDocumentRepository rentalDocumentRepository;
@@ -36,6 +37,7 @@ public class ClientService {
 
     @Transactional
     public ClientDto create(CreateClientRequest req) {
+        rentalWriteLock.acquire();
 
         String normPhone = normalizePhone(req.whatsappPhone());
         if (normPhone != null && clientRepository.existsByWhatsappPhone(normPhone))
@@ -86,7 +88,7 @@ public class ClientService {
 
     @Transactional(readOnly = true)
     public Page<ClientDto> getAll(int page, int size) {
-        Page<Client> clientsPage = clientRepository.findAll(PageRequest.of(page, size));
+        Page<Client> clientsPage = clientRepository.findAll(PageRequest.of(Math.max(0, page), Math.min(Math.max(size, 1), 1000)));
 
         List<Long> clientIds = clientsPage.getContent().stream().map(Client::getId).toList();
         java.util.Map<Long, List<ClientImageDto>> imagesByClientId = clientIds.isEmpty()
@@ -99,7 +101,7 @@ public class ClientService {
                                         java.util.stream.Collectors.toList())));
 
         return clientsPage.map(client -> {
-            ClientDto dto = clientMapper.toDto(client);
+            ClientDto dto = clientMapper.toDtoForDetail(client);
             dto.setImages(imagesByClientId.getOrDefault(client.getId(), List.of()));
             return dto;
         });
@@ -119,6 +121,7 @@ public class ClientService {
 
     @Transactional
     public ClientDto update(Long id, UpdateClientRequest req) {
+        rentalWriteLock.acquire();
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new AppException("CLIENT_NOT_FOUND", "Клиент не найден", HttpStatus.NOT_FOUND));
 
@@ -168,9 +171,13 @@ public class ClientService {
         return clientMapper.toDto(updatedClient);
     }
 
+    @Transactional
     public void delete(Long id) {
+        rentalWriteLock.acquire();
         if (!clientRepository.existsById(id))
             throw new AppException("CLIENT_NOT_FOUND", "Клиент не найден", HttpStatus.NOT_FOUND);
+        if (!rentalDocumentRepository.findByClientId(id).isEmpty())
+            throw new AppException("CLIENT_HAS_HISTORY", "Клиент связан с договорами; удаление запрещено", HttpStatus.CONFLICT);
         clientRepository.deleteById(id);
     }
 

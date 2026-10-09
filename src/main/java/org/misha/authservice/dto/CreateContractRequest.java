@@ -8,6 +8,10 @@ public record CreateContractRequest(
         Long toolId,
         List<Long> toolIds,
         String contractNumber,
-        String offlineId
+        String offlineId,
+        java.time.LocalDateTime startDateTime
 ) {
+    public CreateContractRequest(Long clientId, Long toolId, List<Long> toolIds, String contractNumber, String offlineId) {
+        this(clientId, toolId, toolIds, contractNumber, offlineId, null);
+    }
 }

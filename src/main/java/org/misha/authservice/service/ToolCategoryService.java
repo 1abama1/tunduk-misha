@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ToolCategoryService {
+    private final RentalWriteLock rentalWriteLock;
     private final ToolCategoryRepository categoryRepository;
     private final ToolTemplateRepository templateRepository;
     private final ToolInstanceRepository ToolInstanceRepository;
@@ -33,6 +34,7 @@ public class ToolCategoryService {
 
     @Transactional
     public CategoryDto create(CreateCategoryRequest request) {
+        rentalWriteLock.acquire();
         ToolCategory category = categoryRepository.save(
                 ToolCategory.builder().name(request.name()).build()
         );

@@ -49,7 +49,7 @@ public class AuthFacade {
         return issueTokens(user);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = org.misha.authservice.exception.RefreshReuseException.class)
     public AuthResponse refresh(String refreshToken) {
         if (!StringUtils.hasText(refreshToken)) {
             throw new AppException("REFRESH_TOKEN_REQUIRED", "refreshToken is required", HttpStatus.BAD_REQUEST);
@@ -68,7 +68,7 @@ public class AuthFacade {
                 // Reuse of a revoked token indicates theft: kill the whole session and reject,
                 // instead of issuing fresh tokens to the attacker
                 refreshTokenRepository.deleteByUser(user);
-                throw new AppException("REFRESH_TOKEN_REUSE", "Session terminated", HttpStatus.UNAUTHORIZED);
+                throw new org.misha.authservice.exception.RefreshReuseException();
             }
 
             authService.revokeRefresh(stored);

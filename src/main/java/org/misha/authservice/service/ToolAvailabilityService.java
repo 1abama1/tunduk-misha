@@ -41,7 +41,8 @@ public class ToolAvailabilityService {
     @Transactional(readOnly = true)
     public List<ToolInstance> getAvailableTools(UUID templateId) {
         validateTemplate(templateId);
-        return toolInstanceRepository.findByTemplateIdAndContractIsNull(templateId);
+        return toolInstanceRepository.findByTemplateIdAndContractIsNull(templateId).stream()
+            .filter(t -> t.getStatus() == ToolInstanceStatus.AVAILABLE).toList();
     }
 
     @Transactional(readOnly = true)

@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ToolService {
+    private final RentalWriteLock rentalWriteLock;
     private final ToolInstanceRepository toolInstanceRepository;
     private final ToolTemplateRepository templateRepository;
     private final ToolBookingRepository bookingRepository;
@@ -34,7 +35,7 @@ public class ToolService {
 
     @Transactional(readOnly = true)
     public List<ToolListDto> getAllList() {
-        return toolInstanceRepository.findAll()
+        return toolInstanceRepository.findAllWithTemplate()
                 .stream()
                 .map(toolMapper::toListDto)
                 .toList();
@@ -42,7 +43,7 @@ public class ToolService {
 
     @Transactional(readOnly = true)
     public List<ToolDto> getAllTools() {
-        return toolInstanceRepository.findAll().stream()
+        return toolInstanceRepository.findAllWithTemplate().stream()
                 .map(t -> ToolDto.fromEntity(t))
                 .collect(Collectors.toList());
     }
@@ -50,7 +51,7 @@ public class ToolService {
     @Transactional(readOnly = true)
     public List<ToolDtoSimple> getAll() {
         Map<Long, UUID> activeBookings = getActiveBookingsMap();
-        return toolInstanceRepository.findAll().stream()
+        return toolInstanceRepository.findAllWithTemplate().stream()
                 .map(t -> ToolDtoSimple.fromEntity(t, activeBookings.get(t.getId())))
                 .toList();
     }
@@ -76,12 +77,14 @@ public class ToolService {
 
     @Transactional
     public ToolDtoSimple create(CreateToolRequest request) {
+        rentalWriteLock.acquire();
         ToolInstance savedTool = createToolEntity(request);
         return ToolDtoSimple.fromEntity(savedTool);
     }
 
     @Transactional
     public ToolDto createTool(CreateToolRequest request) {
+        rentalWriteLock.acquire();
         ToolInstance savedTool = createToolEntity(request);
         return ToolDto.fromEntity(savedTool);
     }
@@ -121,6 +124,7 @@ public class ToolService {
 
     @Transactional
     public List<ToolDto> createToolsInBatch(CreateToolBatchRequest request) {
+        rentalWriteLock.acquire();
         ToolTemplate template = templateRepository.findById(request.templateId())
                 .orElseThrow(() -> new AppException(
                         "TEMPLATE_NOT_FOUND",
@@ -173,6 +177,7 @@ public class ToolService {
 
     @Transactional
     public void deleteTool(Long id) {
+        rentalWriteLock.acquire();
         ToolInstance tool = toolInstanceRepository.findById(id)
                 .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "ToolInstance not found", HttpStatus.NOT_FOUND));
 
@@ -198,6 +203,7 @@ public class ToolService {
 
     @Transactional
     public ToolDto updateStatus(Long id, UpdateToolStatusRequest request) {
+        rentalWriteLock.acquire();
         ToolInstance tool = toolInstanceRepository.findById(id)
                 .orElseThrow(() -> new AppException("TOOL_NOT_FOUND", "Tool not found", HttpStatus.NOT_FOUND));
 

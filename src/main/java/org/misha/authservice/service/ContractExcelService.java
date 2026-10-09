@@ -123,6 +123,9 @@ public class ContractExcelService {
         // Загружаем все инструменты договора (с шаблонами)
         java.util.List<ToolInstance> allTools = ToolInstanceRepository.findByContractIdWithTemplate(contractId);
 
+        if (!document.getHistoricalToolIds().isEmpty()) {
+            allTools = ToolInstanceRepository.findAllById(document.getHistoricalToolIds());
+        }
         // Если ни один инструмент не привязан через contract_id, пробуем по toolId в документе
         if (allTools.isEmpty() && document.getToolId() != null) {
             ToolInstanceRepository.findByIdWithTemplateAndContract(document.getToolId())

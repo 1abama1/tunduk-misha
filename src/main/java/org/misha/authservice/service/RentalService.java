@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class RentalService {
+    private final RentalWriteLock rentalWriteLock;
 
         private final ToolInstanceRepository ToolInstanceRepository;
         private final ClientRepository clientRepository;
@@ -28,6 +29,7 @@ public class RentalService {
 
         @Transactional
         public RentalDocument rentTool(RentRequest req) {
+        rentalWriteLock.acquire();
                 ToolInstance toolInstance = ToolInstanceRepository.findById(req.toolId())
                                 .orElseThrow(() -> new AppException(
                                                 "TOOL_NOT_FOUND",
@@ -42,6 +44,10 @@ public class RentalService {
                                                 "Client not found",
                                                 HttpStatus.NOT_FOUND));
 
+                RentalValidation.client(client);
+                if (req.rentDays() == null || req.rentDays() <= 0 || req.pricePerDay() == null ||
+                    !Double.isFinite(req.pricePerDay()) || req.pricePerDay() <= 0 || !Double.isFinite(req.pricePerDay() * req.rentDays()))
+                    throw new AppException("INVALID_RENT", "Укажите положительную конечную цену и срок аренды", HttpStatus.BAD_REQUEST);
                 Double totalPrice = req.pricePerDay() * req.rentDays();
                 String contractNumber = generateContractNumber();
 
@@ -54,6 +60,7 @@ public class RentalService {
                                 .toolId(toolInstance.getId())
                                 .build();
 
+                doc.getHistoricalToolIds().add(toolInstance.getId());
                 rentalRepository.save(doc);
 
                 toolInstance.setContract(doc);
@@ -64,6 +71,7 @@ public class RentalService {
 
         @Transactional
         public void returnTool(ReturnRequest req) {
+        rentalWriteLock.acquire();
                 RentalDocument doc = rentalRepository.findById(req.contractId())
                                 .orElseThrow(() -> new AppException(
                                                 "CONTRACT_NOT_FOUND",
@@ -86,6 +94,9 @@ public class RentalService {
                                                 HttpStatus.NOT_FOUND));
 
                 doc.setToolId(toolInstance.getId());
+                var allTools = ToolInstanceRepository.findByContractId(req.contractId());
+                allTools.forEach(t -> { doc.getHistoricalToolIds().add(t.getId()); t.setContract(null); });
+                ToolInstanceRepository.saveAll(allTools);
                 toolInstance.setContract(null);
                 
                 ToolInstanceRepository.save(toolInstance);

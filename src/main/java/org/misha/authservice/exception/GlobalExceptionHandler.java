@@ -61,6 +61,15 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message);
     }
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> invalidJson(Exception ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_JSON", "Некорректное тело запроса");
+    }
+    @ExceptionHandler({org.springframework.dao.DataIntegrityViolationException.class,
+                       org.springframework.orm.ObjectOptimisticLockingFailureException.class})
+    public ResponseEntity<ApiError> conflict(Exception ex) {
+        return buildResponse(HttpStatus.CONFLICT, "DATA_CONFLICT", "Данные изменены или нарушено ограничение целостности");
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleOther(Exception ex) {
         log.error("Unexpected error occurred", ex);

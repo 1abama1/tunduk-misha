@@ -20,7 +20,7 @@ public class OrderSyncService {
         Pageable pageable = PageRequest.of(page, size);
 
         if (version != null) {
-            return orderRepository.findByTraderAndVersionGreaterThan(trader, version, pageable);
+            throw new org.misha.authservice.exception.BadRequestException("Per-record version cannot be used as a sync cursor; request a full sync without version");
         } else if (since != null && !since.isBlank()) {
             try {
                 OffsetDateTime sinceDateTime = OffsetDateTime.parse(since);

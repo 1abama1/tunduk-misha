@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class BookingService {
+    private final RentalWriteLock rentalWriteLock;
 
     private final ToolBookingRepository bookingRepository;
     private final ToolTemplateRepository templateRepository;
@@ -34,6 +35,7 @@ public class BookingService {
 
     @Transactional
     public BookingDto createBooking(CreateBookingRequest request) {
+        rentalWriteLock.acquire();
             LocalDateTime calculatedEndDateTime = timeCalculator.calculateEndDateTime(request.startDateTime(), request.hours());
         
         if (request.startDateTime().isAfter(calculatedEndDateTime)) {
@@ -83,6 +85,7 @@ public class BookingService {
 
     @Transactional
     public BookingDto cancelBooking(UUID id) {
+        rentalWriteLock.acquire();
         ToolBooking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new AppException("BOOKING_NOT_FOUND", "Booking not found", HttpStatus.NOT_FOUND));
 
@@ -117,6 +120,7 @@ public class BookingService {
 
     @Transactional
     public void deleteBooking(UUID id) {
+        rentalWriteLock.acquire();
         if (!bookingRepository.existsById(id)) {
             throw new AppException("BOOKING_NOT_FOUND", "Booking not found", HttpStatus.NOT_FOUND);
         }

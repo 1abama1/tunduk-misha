@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 public class SyncService {
 
     private final ContractService contractService;
+    private final RentalWriteLock writeLock;
     private final RentalDocumentRepository documentRepository;
     private final ClientRepository clientRepository;
     private final ToolInstanceRepository ToolInstanceRepository;
@@ -41,25 +42,18 @@ public class SyncService {
 
     @Transactional
     public ContractSyncDto.SyncResponse syncContracts(ContractSyncDto syncDto) {
+        writeLock.acquire();
         List<ContractSyncDto.IdMapping> idMappings = new ArrayList<>();
 
         // 1. Process creations
         if (syncDto.getCreations() != null) {
             for (ContractSyncDto.CreateItem item : syncDto.getCreations()) {
-                // Check if already synced by offlineId
-                var existing = documentRepository.findByOfflineId(item.getOfflineId());
-                if (existing.isPresent()) {
-                    idMappings.add(new ContractSyncDto.IdMapping(item.getOfflineId(), existing.get().getId(),
-                            existing.get().getContractNumber()));
-                    continue;
-                }
-
                 CreateContractRequest req =     new CreateContractRequest(
                         item.getClientId(),
                         item.getToolId(),
                         item.getToolIds(),
                         item.getContractNumber(),
-                        item.getOfflineId());
+                        item.getOfflineId(), item.getStartDateTime());
                 var created = contractService.createContract(req);
 
                 // Update offlineId for the newly created contract
@@ -82,7 +76,9 @@ public class SyncService {
                             .orElse(null);
                 }
 
+                if (id == null) throw new org.misha.authservice.exception.NotFoundException("Offline contract has not been created yet");
                 if (id != null) {
+                    checkRevision(id, item.getExpectedUpdatedAt());
                     contractService.update(id, new UpdateContractRequest(item.getComment()));
                 }
             }
@@ -98,89 +94,58 @@ public class SyncService {
                             .orElse(null);
                 }
 
+                if (id == null) throw new org.misha.authservice.exception.NotFoundException("Offline contract has not been created yet");
                 if (id != null) {
+                    checkRevision(id, item.getExpectedUpdatedAt());
                     contractService.closeContract(id,
                             new CloseContractRequest(item.getPaidAmount(), item.getComment(), item.isBroken(), item.getActualReturnDate()));
                 }
             }
         }
 
+        documentRepository.flush();
+        var changedIds = new java.util.LinkedHashSet<Long>();
+        idMappings.forEach(m -> changedIds.add(m.getBackendId()));
+        if (syncDto.getUpdates() != null) syncDto.getUpdates().forEach(i -> changedIds.add(resolveId(i.getId(), i.getOfflineId())));
+        if (syncDto.getClosures() != null) syncDto.getClosures().forEach(i -> changedIds.add(resolveId(i.getId(), i.getOfflineId())));
+        idMappings.clear();
+        for (Long changedId : changedIds) {
+            var d = documentRepository.findById(changedId).orElseThrow();
+            var mapping = new ContractSyncDto.IdMapping(d.getOfflineId(), d.getId(), d.getContractNumber());
+            mapping.setUpdatedAt(d.getUpdatedAt());
+            idMappings.add(mapping);
+        }
         return ContractSyncDto.SyncResponse.builder()
                 .idMappings(idMappings)
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    private Long resolveId(Long id, String offlineId) {
+        return id != null ? id : documentRepository.findByOfflineId(offlineId).orElseThrow().getId();
+    }
+    private void checkRevision(Long id, LocalDateTime expected) {
+        var doc = documentRepository.findById(id).orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Договор не найден"));
+        if (expected != null && !expected.equals(doc.getUpdatedAt()))
+            throw new org.misha.authservice.exception.AppException("SYNC_CONFLICT", "Договор изменён другим пользователем. Проверьте актуальные данные перед повторной отправкой.", org.springframework.http.HttpStatus.CONFLICT);
+    }
+    /** Full snapshot deliberately avoids the unsafe updatedAt watermark protocol. */
+    @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public SyncPullResponse pullSync(Instant sinceMillis, Long branchId) {
-        if (sinceMillis != null && Instant.now().minus(java.time.Duration.ofDays(90)).isAfter(sinceMillis)) {
-            return SyncPullResponse.builder()
-                .fullSyncRequired(true)
-                .serverTimestamp(Instant.now())
-                .build();
-        }
-        LocalDateTime since = sinceMillis != null ? LocalDateTime.ofInstant(sinceMillis, ZoneId.systemDefault()) : LocalDateTime.of(1970, 1, 1, 0, 0);
-
-        var clients = clientRepository.findByUpdatedAtAfter(since).stream()
-                .map(clientMapper::toDto)
-                .toList();
-        List<Long> deletedClientIds = jdbcTemplate.queryForList(
-            "SELECT id FROM clients WHERE is_deleted = true AND deleted_at > ?", Long.class, since);
-
-        var tools = ToolInstanceRepository.findByUpdatedAtAfter(since).stream()
-                .map(ToolDto::fromEntity)
-                .toList();
-        List<Long> deletedToolIds = jdbcTemplate.queryForList(
-            "SELECT id FROM tool_instances WHERE is_deleted = true AND deleted_at > ?", Long.class, since);
-
-        var categories = categoryRepository.findByUpdatedAtAfter(since).stream()
-                .map(c -> new CategoryDto(c.getId(), c.getName()))
-                .toList();
-        List<java.util.UUID> deletedCategoryIds = jdbcTemplate.queryForList(
-            "SELECT id FROM tool_categories WHERE is_deleted = true AND deleted_at > ?", java.util.UUID.class, since);
-
-        var templates = templateRepository.findByUpdatedAtAfter(since).stream()
-                .map(t -> new TemplateDto(t.getId(), t.getName(), t.getCategory() != null ? t.getCategory().getId() : null))
-                .toList();
-        List<java.util.UUID> deletedTemplateIds = jdbcTemplate.queryForList(
-            "SELECT id FROM tool_templates WHERE is_deleted = true AND deleted_at > ?", java.util.UUID.class, since);
-
-        var documents = documentRepository.findByUpdatedAtAfter(since).stream()
-                .map(this::toDto)
-                .toList();
-        List<Long> deletedDocumentIds = jdbcTemplate.queryForList(
-            "SELECT id FROM rental_documents WHERE is_deleted = true AND deleted_at > ?", Long.class, since);
-
         return SyncPullResponse.builder()
-                .clients(clients)
-                .deletedClientIds(deletedClientIds)
-                .tools(tools)
-                .deletedToolIds(deletedToolIds)
-                .categories(categories)
-                .deletedCategoryIds(deletedCategoryIds)
-                .templates(templates)
-                .deletedTemplateIds(deletedTemplateIds)
-                .documents(documents)
-                .deletedDocumentIds(deletedDocumentIds)
-                .serverTimestamp(Instant.now())
-                .fullSyncRequired(false) // This can be customized based on 90 days policy
-                .build();
+            .clients(clientRepository.findAll().stream().map(clientMapper::toDtoForDetail).toList())
+            .tools(ToolInstanceRepository.findAllWithTemplate().stream().map(ToolDto::fromEntity).toList())
+            .categories(categoryRepository.findAll().stream().map(c -> new CategoryDto(c.getId(), c.getName())).toList())
+            .templates(templateRepository.findAll().stream().map(t -> new org.misha.authservice.dto.TemplateFullDto(
+                t.getId(), t.getName(), t.getCategory() == null ? null : t.getCategory().getId(),
+                t.getDailyRentalPrice(), t.getDepositAmount(), t.getPurchasePrice(), List.of())).toList())
+            .documents(documentRepository.findAll().stream().map(this::toDto).toList())
+            .deletedClientIds(List.of()).deletedToolIds(List.of()).deletedCategoryIds(List.of())
+            .deletedTemplateIds(List.of()).deletedDocumentIds(List.of())
+            .fullSnapshot(true).fullSyncRequired(false).serverTimestamp(Instant.now()).build();
     }
 
     private RentalDocumentDto toDto(org.misha.authservice.entity.RentalDocument doc) {
-        return new RentalDocumentDto(
-                doc.getId(),
-                doc.getContractNumber(),
-                doc.getStartDateTime(),
-                doc.getDailyPrice(),
-                doc.getAmount(),
-                doc.getCreatedAt(),
-                doc.getClient() != null ? doc.getClient().getId() : null,
-                doc.getReturnDate(),
-                doc.getTerminatedAt(),
-                doc.getTerminationReason(),
-                doc.getStatus(),
-                doc.getComment(),
-                doc.getOfflineId());
+        return RentalDocumentDto.fromEntity(doc);
     }
 }
 

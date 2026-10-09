@@ -21,7 +21,7 @@ public class ClientImageService {
     private final ClientRepository clientRepository;
     private final ClientImageRepository imageRepository;
 
-    @Transactional
+    @Transactional(rollbackFor = IOException.class)
     public int uploadImages(Long clientId, List<MultipartFile> files) throws IOException {
         if (files == null || files.isEmpty()) {
             throw new AppException("FILES_REQUIRED", "Не переданы файлы", HttpStatus.BAD_REQUEST);

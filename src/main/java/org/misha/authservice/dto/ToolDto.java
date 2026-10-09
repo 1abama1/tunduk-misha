@@ -15,7 +15,13 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ToolDto {
+    @com.fasterxml.jackson.annotation.JsonGetter("dailyRentalPrice")
+    public BigDecimal getDailyRentalPrice() { return dailyPrice; }
+    @com.fasterxml.jackson.annotation.JsonGetter("depositAmount")
+    public BigDecimal getDepositAmount() { return deposit; }
     private Long id;
+    private UUID templateId;
+    private BigDecimal purchasePrice;
     private String name;
     private String inventoryNumber;
     private Integer instanceNumber;
@@ -50,6 +56,8 @@ public class ToolDto {
 
         if (t.getTemplate() != null) {
             dto.setName(t.getTemplate().getName());
+            dto.setTemplateId(t.getTemplate().getId());
+            dto.setPurchasePrice(t.getTemplate().getPurchasePrice());
             dto.setDeposit(t.getTemplate().getDepositAmount());
             dto.setDailyPrice(t.getTemplate().getDailyRentalPrice());
             

@@ -109,7 +109,7 @@ public class Client {
         @OneToOne(mappedBy = "client", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
         private ClientPassport passport;
 
-        @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        @OneToMany(mappedBy = "client", fetch = FetchType.LAZY)
         @JsonManagedReference
         @Builder.Default
         private List<RentalDocument> documents = new ArrayList<>();

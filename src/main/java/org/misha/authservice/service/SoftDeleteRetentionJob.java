@@ -15,7 +15,8 @@ public class SoftDeleteRetentionJob {
     private final JdbcTemplate jdbcTemplate;
 
     // Run every 30 days (or day 1 of the month for simplicity)
-    @Scheduled(cron = "0 0 0 1 * ?")
+    // Purge disabled: retained history references must not be deleted implicitly.
+    // Re-enable only with an approved graph-aware archival policy.
     @Transactional
     public void cleanupOldSoftDeletes() {
         log.info("Starting cleanup of old soft-deleted records (> 90 days)");

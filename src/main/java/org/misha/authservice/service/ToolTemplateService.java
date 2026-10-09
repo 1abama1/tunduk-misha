@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ToolTemplateService {
+    private final RentalWriteLock rentalWriteLock;
     private final ToolTemplateRepository templateRepository;
     private final ToolCategoryRepository categoryRepository;
     private final ToolInstanceRepository ToolInstanceRepository;
@@ -32,6 +33,7 @@ public class ToolTemplateService {
 
     @Transactional
     public TemplateDto create(CreateTemplateRequest request) {
+        rentalWriteLock.acquire();
         ToolCategory category = categoryRepository.findById(request.categoryId())
                 .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Category not found"));
 
@@ -79,6 +81,7 @@ public class ToolTemplateService {
 
     @Transactional
     public TemplateFullDto update(UUID id, org.misha.authservice.dto.UpdateTemplateRequest request) {
+        rentalWriteLock.acquire();
         ToolTemplate template = templateRepository.findById(id)
                 .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Template not found"));
 

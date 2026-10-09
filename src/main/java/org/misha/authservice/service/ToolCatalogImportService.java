@@ -19,6 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Slf4j
 public class ToolCatalogImportService {
+    private final RentalWriteLock rentalWriteLock;
 
     private final ToolTemplateRepository templateRepository;
     private final ToolInstanceRepository instanceRepository;
@@ -28,6 +29,7 @@ public class ToolCatalogImportService {
      */
     @Transactional
     public void importCatalogAndGenerateInstances(String tsvData, int instancesCount) {
+        rentalWriteLock.acquire();
         String[] lines = tsvData.split("\n");
         for (int i = 0; i < lines.length; i++) {
             String line = lines[i].trim();
@@ -92,6 +94,7 @@ public class ToolCatalogImportService {
      */
     @Transactional
     public List<ToolInstance> generateInstancesForTemplate(ToolTemplate template, int count) {
+        rentalWriteLock.acquire();
         // Находим максимальный инвентарный номер, чтобы продолжить счет, если они уже есть
         String lastInventoryNumber = instanceRepository.findMaxInventoryNumberByTemplateId(template.getId());
         int startNumber = 1;

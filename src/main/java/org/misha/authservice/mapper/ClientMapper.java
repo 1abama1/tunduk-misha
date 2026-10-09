@@ -137,9 +137,14 @@ public class ClientMapper {
             toolDto.setCategoryName(ToolInstance.getTemplate().getCategory().getName());
         }
 
-        List<ToolDto> toolsList = d.getTools() != null ? d.getTools().stream().map(ToolDto::fromEntity).toList() : List.of();
+        List<ToolDto> toolsList = d.getHistoricalToolIds().isEmpty()
+                ? (d.getTools() != null ? d.getTools().stream().map(ToolDto::fromEntity).toList() : List.of())
+                : ToolInstanceRepository.findAllById(d.getHistoricalToolIds()).stream().map(ToolDto::fromEntity).toList();
 
         return DocumentDetailDto.builder()
+                .offlineId(d.getOfflineId())
+                .updatedAt(d.getUpdatedAt())
+                .toolIds(d.getHistoricalToolIds())
                 .id(d.getId())
                 .contractNumber(d.getContractNumber())
                 .amount(d.getAmount())
@@ -159,7 +164,7 @@ public class ClientMapper {
                 .build();
     }
 
-    private ClientDto toDtoForDetail(Client c) {
+    public ClientDto toDtoForDetail(Client c) {
         // РњР°РїРїРёРј РєР»РёРµРЅС‚Р° Р‘Р•Р— РґРѕРєСѓРјРµРЅС‚РѕРІ, С‡С‚РѕР±С‹ РёР·Р±РµР¶Р°С‚СЊ Р±РµСЃРєРѕРЅРµС‡РЅРѕР№ СЂРµРєСѓСЂСЃРёРё Рё Р»РёС€РЅРёС…
         // РґР°РЅРЅС‹С…
         return ClientDto.builder()
