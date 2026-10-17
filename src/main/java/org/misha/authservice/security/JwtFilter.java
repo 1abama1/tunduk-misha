@@ -34,10 +34,11 @@ public class JwtFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
-                String subject = jwtUtil.validateAccessToken(token);
+                var claims = jwtUtil.validateAccessClaims(token);
+                String subject = claims.getSubject();
 
                 // Role is embedded in the JWT claim — no DB call needed
-                String role = jwtUtil.getRoleClaim(token);
+                String role = claims.get("role", String.class);
                 List<SimpleGrantedAuthority> authorities = role != null
                         ? List.of(new SimpleGrantedAuthority("ROLE_" + role))
                         : List.of();
@@ -46,8 +47,9 @@ public class JwtFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(subject, null, authorities);
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
-            } catch (Exception e) {
-                log.debug("JWT validation failed", e);
+            } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
+                SecurityContextHolder.clearContext();
+                log.debug("Invalid bearer token rejected");
             }
         }
         chain.doFilter(request, response);

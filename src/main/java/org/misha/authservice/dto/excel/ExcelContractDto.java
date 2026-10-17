@@ -15,7 +15,7 @@ public record ExcelContractDto(
         Integer quantity,
         ClientExcelDto client,
         RentalExcelDto rental,
-        List<ToolExcelDto> tools  // Первые 5 инструментов для таблицы в "Пр №1"
+        List<ToolExcelDto> tools  // Все инструменты; генератор разбивает приложение на листы по 5 строк
 ) {
 }
 

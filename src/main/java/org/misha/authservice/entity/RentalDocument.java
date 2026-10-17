@@ -25,7 +25,9 @@ import java.util.List;
 @Table(name = "rental_documents", uniqueConstraints = {
         @UniqueConstraint(name = "uk_contract_number_created_at", columnNames = { "contract_number", "created_at" })
 })
-@Data
+@Getter
+@Setter
+@ToString(onlyExplicitlyIncluded = true)
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

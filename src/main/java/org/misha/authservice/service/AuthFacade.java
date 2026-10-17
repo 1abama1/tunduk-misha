@@ -57,12 +57,20 @@ public class AuthFacade {
         try {
             String subject = jwtUtil.validateRefreshToken(refreshToken);
             String oldJti = jwtUtil.getJti(refreshToken);
+            if (!StringUtils.hasText(oldJti)) {
+                throw new AppException("INVALID_REFRESH_TOKEN", "Invalid refresh token", HttpStatus.UNAUTHORIZED);
+            }
             User user = userRepository.findById(Long.valueOf(subject))
                     .orElseThrow(() -> new AppException("INVALID_REFRESH_TOKEN", "Invalid refresh token", HttpStatus.UNAUTHORIZED));
 
             RefreshToken stored = refreshTokenRepository.findByJti(oldJti)
                     // JTI missing in DB means the token was already rotated/purged — reject
                     .orElseThrow(() -> new AppException("INVALID_REFRESH_TOKEN", "Invalid refresh token", HttpStatus.UNAUTHORIZED));
+
+            if (stored.getUser() == null || !user.getId().equals(stored.getUser().getId())
+                    || stored.getExpiresAt() == null || !stored.getExpiresAt().isAfter(java.time.OffsetDateTime.now())) {
+                throw new AppException("INVALID_REFRESH_TOKEN", "Invalid refresh token", HttpStatus.UNAUTHORIZED);
+            }
 
             if (stored.isRevoked()) {
                 // Reuse of a revoked token indicates theft: kill the whole session and reject,
@@ -104,10 +112,10 @@ public class AuthFacade {
 
     private String resolvePrincipal(String email, String phone) {
         if (StringUtils.hasText(email)) {
-            return email;
+            return org.misha.authservice.security.LoginIdentifiers.email(email);
         }
         if (StringUtils.hasText(phone)) {
-            return phone;
+            return org.misha.authservice.security.LoginIdentifiers.phone(phone);
         }
         return null;
     }

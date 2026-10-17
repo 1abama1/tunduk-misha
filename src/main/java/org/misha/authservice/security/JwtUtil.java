@@ -19,7 +19,10 @@ public class JwtUtil {
             @Value("${jwt.access.expiration}") long accessExpiration,
             @Value("${jwt.refresh.expiration}") long refreshExpiration
     ) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        if (accessExpiration <= 0 || refreshExpiration <= 0) {
+            throw new IllegalArgumentException("Token expiration must be positive");
+        }
         this.accessExpiration = accessExpiration;
         this.refreshExpiration = refreshExpiration;
     }
@@ -66,15 +69,27 @@ public class JwtUtil {
     }
 
     public String validateAccessToken(String token) {
-        Claims claims = parse(token).getBody();
-        if (!"access".equals(claims.get("type"))) throw new JwtException("Invalid token type");
-        return claims.getSubject();
+        return validateClaims(token, "access").getSubject();
+    }
+
+    public Claims validateAccessClaims(String token) {
+        return validateClaims(token, "access");
     }
 
     public String validateRefreshToken(String token) {
+        return validateClaims(token, "refresh").getSubject();
+    }
+
+    private Claims validateClaims(String token, String type) {
         Claims claims = parse(token).getBody();
-        if (!"refresh".equals(claims.get("type"))) throw new JwtException("Invalid token type");
-        return claims.getSubject();
+        if (!type.equals(claims.get("type")) || claims.getExpiration() == null
+                || claims.getSubject() == null) throw new JwtException("Invalid token claims");
+        try {
+            if (Long.parseLong(claims.getSubject()) <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException ex) {
+            throw new JwtException("Invalid token subject");
+        }
+        return claims;
     }
 
     public String getJti(String token) {

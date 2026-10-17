@@ -1,0 +1,21 @@
+{
+  "mavenReportedTests": 138,
+  "xmlTestcaseNodes": 138,
+  "uniqueTestcases": 138,
+  "failedTestcases": 0,
+  "errorTestcases": 0,
+  "skippedTestcases": 0,
+  "xmlSuiteAttributeSum": 122,
+  "suiteMetadataMismatches": [
+    [
+      "org.misha.authservice.service.AuthServiceTest",
+      0,
+      8
+    ],
+    [
+      "org.misha.authservice.service.ClientDirectoryServiceTest",
+      0,
+      8
+    ]
+  ]
+}

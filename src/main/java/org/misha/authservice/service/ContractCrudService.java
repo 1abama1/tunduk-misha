@@ -70,6 +70,13 @@ public class ContractCrudService {
     @Transactional
     public RentalDocumentDto createContract(CreateContractRequest req) {
         rentalWriteLock.acquire();
+        List<Long> idsToRent = req.toolIds() != null && !req.toolIds().isEmpty()
+                ? req.toolIds() : req.toolId() == null ? List.of() : List.of(req.toolId());
+        if (idsToRent.isEmpty() || idsToRent.size() > 10
+                || idsToRent.stream().anyMatch(id -> id == null || id <= 0)
+                || new java.util.HashSet<>(idsToRent).size() != idsToRent.size()) {
+            throw new BadRequestException("Укажите от 1 до 10 уникальных положительных toolIds");
+        }
         if (req.offlineId() != null && !req.offlineId().isBlank()) {
             var existing = documentRepository.findByOfflineId(req.offlineId());
             if (existing.isPresent()) {
@@ -88,20 +95,6 @@ public class ContractCrudService {
         }
         if (req.clientId() == null) {
             throw new BadRequestException("Не передан clientId");
-        }
-
-        java.util.List<Long> idsToRent = new java.util.ArrayList<>();
-        if (req.toolIds() != null && !req.toolIds().isEmpty()) {
-            idsToRent.addAll(req.toolIds());
-        } else if (req.toolId() != null) {
-            idsToRent.add(req.toolId());
-        }
-
-        if (idsToRent.isEmpty()) {
-            throw new BadRequestException("Не передан toolId или toolIds");
-        }
-        if (idsToRent.size() > 10) {
-            throw new BadRequestException("Максимум 10 инструментов в одном договоре");
         }
 
         Client client = clientRepository.findById(req.clientId())
@@ -138,8 +131,10 @@ public class ContractCrudService {
         }
 
         doc.getHistoricalToolIds().addAll(idsToRent);
-        doc.setToolId(toolsToRent.get(0).getId());
+        doc.setToolId(idsToRent.get(0));
         documentRepository.save(doc);
+        // PreUpdate runs on flush: the revision returned to offline clients must be the persisted one.
+        documentRepository.flush();
 
         auditLogService.logCreate("Contract", doc.getId(), Map.of(
                 "contractNumber", doc.getContractNumber(),
@@ -219,6 +214,7 @@ public class ContractCrudService {
             changes.put("comment", "updated");
         auditLogService.logUpdate("Contract", id, changes);
 
+        documentRepository.flush();
         return toDto(doc);
     }
 

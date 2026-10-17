@@ -11,6 +11,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ToolInstanceRepository extends JpaRepository<ToolInstance, Long> {
+    @Query("""
+        SELECT COUNT(t) FROM ToolInstance t
+        WHERE t.template.id = :templateId AND t.status = 'AVAILABLE'
+          AND NOT EXISTS (SELECT d.id FROM RentalDocument d
+                          WHERE (d.id = t.contract.id OR d.toolId = t.id)
+                            AND d.returnDate IS NULL AND d.terminatedAt IS NULL
+                            AND (d.startDateTime IS NULL OR d.startDateTime < :endDate))
+          AND NOT EXISTS (SELECT b.id FROM ToolBooking b WHERE b.toolInstance.id = t.id
+                          AND b.status = 'ACTIVE' AND b.startDateTime < :endDate AND b.endDateTime > :startDate)
+        """)
+    int countAvailableForPeriod(@Param("templateId") UUID templateId,
+                                @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
     
     @Query("SELECT MAX(t.inventoryNumber) FROM ToolInstance t WHERE t.template.id = :templateId")
     String findMaxInventoryNumberByTemplateId(@Param("templateId") UUID templateId);
@@ -34,6 +46,8 @@ public interface ToolInstanceRepository extends JpaRepository<ToolInstance, Long
     List<ToolInstance> findByContractId(@Param("contractId") Long contractId);
 
     long countByTemplateId(UUID templateId);
+
+    long countByStatus(org.misha.authservice.entity.ToolInstanceStatus status);
 
     @Query("SELECT COUNT(t) FROM ToolInstance t WHERE t.template.id = :templateId AND t.status = :status")
     long countByTemplateIdAndStatus(@Param("templateId") UUID templateId, @Param("status") org.misha.authservice.entity.ToolInstanceStatus status);

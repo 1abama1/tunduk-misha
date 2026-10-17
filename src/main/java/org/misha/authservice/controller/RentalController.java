@@ -65,20 +65,7 @@ public class RentalController {
      * РџСЂРµРѕР±СЂР°Р·СѓРµС‚ RentalDocument РІ DTO.
      */
     private RentalDocumentDto toDto(RentalDocument doc) {
-        return new RentalDocumentDto(
-                doc.getId(),
-                doc.getContractNumber(),
-                doc.getStartDateTime(),
-                doc.getDailyPrice(),
-                doc.getAmount(),
-                doc.getCreatedAt(),
-                doc.getClient() != null ? doc.getClient().getId() : null,
-                doc.getReturnDate(),
-                doc.getTerminatedAt(),
-                doc.getTerminationReason(),
-                doc.getStatus(),
-                doc.getComment(),
-                doc.getOfflineId());
+        return RentalDocumentDto.fromEntity(doc);
     }
 }
 

@@ -13,7 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString(exclude = {"template"})
+@ToString(exclude = {"template", "contract"})
 @org.hibernate.annotations.SQLDelete(sql = "UPDATE tool_instances SET is_deleted = true, deleted_at = NOW(), updated_at = NOW() WHERE id = ?")
 @org.hibernate.annotations.SQLRestriction("is_deleted = false")
 public class ToolInstance {

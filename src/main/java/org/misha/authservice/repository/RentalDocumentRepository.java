@@ -11,11 +11,31 @@ import java.util.Optional;
 
 public interface RentalDocumentRepository extends JpaRepository<RentalDocument, Long> {
 
+  // EntityManager.remove deletes ElementCollection rows before applying @SQLDelete.
+  // Explicit soft deletion preserves historical composition and skips ORM remove cascades.
+  @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+  @org.springframework.transaction.annotation.Transactional
+  @Query(value = "UPDATE rental_documents SET is_deleted=true, deleted_at=NOW(), updated_at=NOW() WHERE id=:id AND is_deleted=false", nativeQuery = true)
+  int markDeleted(@Param("id") Long id);
+
+  @Override
+  default void delete(RentalDocument document) {
+    if (document.getId() != null) markDeleted(document.getId());
+  }
+
+  @Override
+  default void deleteById(Long id) {
+    markDeleted(id);
+  }
+
   List<RentalDocument> findByUpdatedAtAfter(LocalDateTime since);
 
   Optional<RentalDocument> findByOfflineId(String offlineId);
 
   List<RentalDocument> findByClientId(Long clientId);
+
+  @Query(value = "SELECT EXISTS (SELECT 1 FROM rental_documents WHERE client_id=:clientId)", nativeQuery = true)
+  boolean hasClientHistory(@Param("clientId") Long clientId);
 
   @Query("SELECT d FROM RentalDocument d WHERE d.client.id = :clientId AND d.returnDate IS NULL AND d.terminatedAt IS NULL")
   List<RentalDocument> findActiveContractsByClientId(@Param("clientId") Long clientId);

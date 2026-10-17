@@ -131,7 +131,24 @@ public class ExcelGeneratorService {
     // -------------------------------------------------------
 
     private void fillToolPriceSheet(Workbook workbook, ExcelContractDto dto) {
-        Sheet sheet = workbook.getSheet("Пр №1");
+        var tools = dto.tools() == null ? java.util.List.<org.misha.authservice.dto.excel.ToolExcelDto>of() : dto.tools();
+        int pages = Math.max(1, (tools.size() + 4) / 5);
+        Sheet original = workbook.getSheet("Пр №1");
+        if (original == null) throw new IllegalStateException("Required tool appendix is missing from template");
+        for (int page = 0; page < pages; page++) {
+            Sheet sheet = page == 0 ? original : workbook.cloneSheet(workbook.getSheetIndex(original));
+            if (page > 0) {
+                workbook.setSheetName(workbook.getSheetIndex(sheet), "Пр №1 (" + (page + 1) + ")");
+                String printArea = workbook.getPrintArea(workbook.getSheetIndex(original));
+                if (printArea != null) workbook.setPrintArea(workbook.getSheetIndex(sheet), printArea.substring(printArea.indexOf('!') + 1));
+            }
+            int from = page * 5;
+            fillToolPricePage(sheet, tools.subList(Math.min(from, tools.size()), Math.min(from + 5, tools.size())), dto, page);
+        }
+    }
+
+    private void fillToolPricePage(Sheet sheet, java.util.List<org.misha.authservice.dto.excel.ToolExcelDto> tools,
+                                   ExcelContractDto dto, int page) {
         if (sheet == null) {
             log.warn("Лист 'Пр №1' не найден в шаблоне");
             return;
@@ -146,16 +163,13 @@ public class ExcelGeneratorService {
         //   N-O      = Стоимость оборудования (записываем в N = col 13)
         int firstDataRow = 19; // Excel row 20 → 0-based index 19
 
-        java.util.List<org.misha.authservice.dto.excel.ToolExcelDto> tools =
-                dto.tools() != null ? dto.tools() : java.util.List.of();
-
         for (int i = 0; i < 5; i++) {
             String rowRef = String.valueOf(firstDataRow + i + 1); // Excel row number (1-based)
 
             if (i < tools.size()) {
                 var tool = tools.get(i);
                 // Номер по порядку
-                set(sheet, "A" + rowRef, i + 1);
+                set(sheet, "A" + rowRef, page * 5 + i + 1);
                 // Наименование — пишем в колонку B
                 set(sheet, "B" + rowRef, tool.name() != null ? tool.name() : "");
                 // Кол-Во — пишем в колонку I (col index 8)
@@ -179,8 +193,10 @@ public class ExcelGeneratorService {
         }
 
         // P20 — Залог (обеспечительный платеж) — оставляем из первого инструмента
-        if (dto.depositAmount() != null) {
+        if (page == 0 && dto.depositAmount() != null) {
             set(sheet, "P20", dto.depositAmount());
+        } else if (page > 0) {
+            clear(sheet, "P20");
         }
     }
 
@@ -253,6 +269,10 @@ public class ExcelGeneratorService {
         }
 
         Cell cell = getCell(sheet, cellRef);
+
+        // setCellValue on a formula cell only changes its cached result. Recalculation would
+        // otherwise overwrite backend values (including continuation-page tool names).
+        cell.setBlank();
 
         if (value instanceof Number number) {
             cell.setCellValue(number.doubleValue());

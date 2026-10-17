@@ -20,7 +20,7 @@ public class StatsService {
                 long active = contractRepository.countActive();
                 long available = toolInstanceRepository.countByContractIsNull();
                 long rented = toolInstanceRepository.countByContractNotNull();
-                long broken = 0; // Not tracked in new UUID schema yet
+                long broken = toolInstanceRepository.countByStatus(org.misha.authservice.entity.ToolInstanceStatus.IN_REPAIR);
 
                 var today = LocalDate.now();
                 double todayRevenue = contractRepository.sumAmountClosedOnDate(today);

@@ -176,7 +176,7 @@ public class ClientService {
         rentalWriteLock.acquire();
         if (!clientRepository.existsById(id))
             throw new AppException("CLIENT_NOT_FOUND", "Клиент не найден", HttpStatus.NOT_FOUND);
-        if (!rentalDocumentRepository.findByClientId(id).isEmpty())
+        if (rentalDocumentRepository.hasClientHistory(id))
             throw new AppException("CLIENT_HAS_HISTORY", "Клиент связан с договорами; удаление запрещено", HttpStatus.CONFLICT);
         clientRepository.deleteById(id);
     }

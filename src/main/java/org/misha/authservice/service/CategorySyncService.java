@@ -14,7 +14,7 @@ public class CategorySyncService {
     private final ToolCategoryRepository categoryRepository;
 
     public Page<ToolCategory> syncCategories(String since, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, Math.min(size, 200), org.springframework.data.domain.Sort.by("id"));
         return categoryRepository.findAll(pageable);
     }
 }

@@ -65,6 +65,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> invalidJson(Exception ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_JSON", "Некорректное тело запроса");
     }
+    @ExceptionHandler({org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.multipart.support.MissingServletRequestPartException.class})
+    public ResponseEntity<ApiError> invalidParameter(Exception ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_PARAMETER", "Некорректный или отсутствующий параметр запроса");
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> uploadTooLarge(Exception ex) {
+        return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "UPLOAD_TOO_LARGE", "Превышен допустимый размер загрузки");
+    }
     @ExceptionHandler({org.springframework.dao.DataIntegrityViolationException.class,
                        org.springframework.orm.ObjectOptimisticLockingFailureException.class})
     public ResponseEntity<ApiError> conflict(Exception ex) {

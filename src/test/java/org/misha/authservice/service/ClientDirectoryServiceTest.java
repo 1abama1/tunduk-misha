@@ -35,6 +35,9 @@ import static org.mockito.Mockito.*;
 class ClientDirectoryServiceTest {
 
     @Mock
+    private RentalWriteLock rentalWriteLock;
+
+    @Mock
     private ClientRepository clientRepository;
 
     @InjectMocks

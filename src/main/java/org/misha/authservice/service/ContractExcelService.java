@@ -124,7 +124,7 @@ public class ContractExcelService {
         java.util.List<ToolInstance> allTools = ToolInstanceRepository.findByContractIdWithTemplate(contractId);
 
         if (!document.getHistoricalToolIds().isEmpty()) {
-            allTools = ToolInstanceRepository.findAllById(document.getHistoricalToolIds());
+            allTools = new java.util.ArrayList<>(ToolInstanceRepository.findAllById(document.getHistoricalToolIds()));
         }
         // Если ни один инструмент не привязан через contract_id, пробуем по toolId в документе
         if (allTools.isEmpty() && document.getToolId() != null) {

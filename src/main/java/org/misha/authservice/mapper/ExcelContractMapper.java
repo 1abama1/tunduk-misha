@@ -57,7 +57,7 @@ public class ExcelContractMapper {
     }
 
     /**
-     * Основной метод: принимает список инструментов (первые 5 будут в таблице "Пр №1").
+     * Основной метод: передаёт все инструменты генератору листов приложения.
      */
     public ExcelContractDto toExcelContractDto(
             RentalDocument document,
@@ -85,10 +85,10 @@ public class ExcelContractMapper {
                 ? firstTool.getTemplate().getPurchasePrice()
                 : null;
 
-        // Строим список ToolExcelDto — максимум 5 инструментов
+        // Число строк на листе ограничивает генератор, а не состав договора.
         java.util.List<org.misha.authservice.dto.excel.ToolExcelDto> toolDtos = new java.util.ArrayList<>();
         if (toolInstances != null) {
-            int limit = Math.min(toolInstances.size(), 5);
+            int limit = toolInstances.size();
             for (int i = 0; i < limit; i++) {
                 ToolInstance t = toolInstances.get(i);
                 String name = buildToolFullName(t);

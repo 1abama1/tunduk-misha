@@ -22,7 +22,7 @@ public class ApiKeyValidationService {
         Trader trader = traderRepository.findByApiKey(apiKey)
                 .orElseThrow(() -> new AppException("INVALID_API_KEY", "Invalid API key", HttpStatus.UNAUTHORIZED));
 
-        if (!trader.getApproved()) {
+        if (!Boolean.TRUE.equals(trader.getApproved())) {
             throw new AppException("TRADER_NOT_APPROVED", "Trader is not approved", HttpStatus.FORBIDDEN);
         }
 
@@ -34,6 +34,7 @@ public class ApiKeyValidationService {
                     throw new AppException("API_KEY_MISMATCH", "API key does not belong to the authenticated user", HttpStatus.FORBIDDEN);
                 }
             } catch (NumberFormatException e) {
+                throw new AppException("API_KEY_MISMATCH", "Invalid authenticated user", HttpStatus.FORBIDDEN);
             }
         }
 

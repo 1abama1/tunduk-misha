@@ -12,6 +12,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class CriticalRegressionTest {
+    @Test void traderCategorySerializationDoesNotTraverseRentalGraph() throws Exception {
+        var category = ToolCategory.builder().id(UUID.randomUUID()).name("Catalog").build();
+        var child = ToolCategory.builder().id(UUID.randomUUID()).name("Child").parentCategory(category).build();
+        category.getSubCategories().add(child);
+        var template = ToolTemplate.builder().id(UUID.randomUUID()).name("Drill").category(category).build();
+        category.getTemplates().add(template);
+        var client = Client.builder().fullName("PRIVATE-CLIENT-DATA").build();
+        template.getInstances().add(ToolInstance.builder().id(1L).template(template)
+                .contract(RentalDocument.builder().client(client).build()).build());
+        var json = new ObjectMapper().findAndRegisterModules().writeValueAsString(category);
+        assertFalse(json.contains("PRIVATE-CLIENT-DATA"));
+        assertFalse(json.contains("\"instances\""));
+        assertTrue(json.contains("Drill"));
+        assertTrue(json.contains("Child"));
+    }
+
     @Test void closingBrokenMultiToolContractPreservesEveryTool() {
         var docs = mock(RentalDocumentRepository.class);
         var tools = mock(ToolInstanceRepository.class);

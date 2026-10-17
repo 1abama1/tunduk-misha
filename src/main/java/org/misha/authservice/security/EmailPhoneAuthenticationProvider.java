@@ -28,10 +28,10 @@ public class EmailPhoneAuthenticationProvider implements AuthenticationProvider 
 
         User user = null;
         if (principal.contains("@")) {
-            user = userRepository.findByEmail(principal).orElse(null);
+            user = userRepository.findByEmail(LoginIdentifiers.email(principal)).orElse(null);
         }
         if (user == null && principal.matches("[+0-9().\u0020-]{5,}")) {
-            user = userRepository.findByPhone(principal).orElse(null);
+            user = userRepository.findByPhone(LoginIdentifiers.phone(principal)).orElse(null);
         }
         if (user == null) {
             // Unified message for both cases — prevents user enumeration

@@ -34,11 +34,10 @@ public class SyncService {
     private final RentalWriteLock writeLock;
     private final RentalDocumentRepository documentRepository;
     private final ClientRepository clientRepository;
-    private final ToolInstanceRepository ToolInstanceRepository;
+    private final ToolInstanceRepository toolInstanceRepository;
     private final ToolCategoryRepository categoryRepository;
     private final ToolTemplateRepository templateRepository;
     private final ClientMapper clientMapper;
-    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Transactional
     public ContractSyncDto.SyncResponse syncContracts(ContractSyncDto syncDto) {
@@ -56,14 +55,17 @@ public class SyncService {
                         item.getOfflineId(), item.getStartDateTime());
                 var created = contractService.createContract(req);
 
-                // Update offlineId for the newly created contract
-                var doc = documentRepository.findById(created.id()).orElseThrow();
-                doc.setOfflineId(item.getOfflineId());
-                documentRepository.save(doc);
-
                 idMappings.add(
                         new ContractSyncDto.IdMapping(item.getOfflineId(), created.id(), created.contractNumber()));
             }
+        }
+
+        // Compare every precondition with the batch's initial state, before any update flushes.
+        if (syncDto.getUpdates() != null) {
+            for (var item : syncDto.getUpdates()) checkRevision(resolveId(item.getId(), item.getOfflineId()), item.getExpectedUpdatedAt());
+        }
+        if (syncDto.getClosures() != null) {
+            for (var item : syncDto.getClosures()) checkRevision(resolveId(item.getId(), item.getOfflineId()), item.getExpectedUpdatedAt());
         }
 
         // 2. Process updates
@@ -77,10 +79,7 @@ public class SyncService {
                 }
 
                 if (id == null) throw new org.misha.authservice.exception.NotFoundException("Offline contract has not been created yet");
-                if (id != null) {
-                    checkRevision(id, item.getExpectedUpdatedAt());
-                    contractService.update(id, new UpdateContractRequest(item.getComment()));
-                }
+                contractService.update(id, new UpdateContractRequest(item.getComment()));
             }
         }
 
@@ -95,11 +94,8 @@ public class SyncService {
                 }
 
                 if (id == null) throw new org.misha.authservice.exception.NotFoundException("Offline contract has not been created yet");
-                if (id != null) {
-                    checkRevision(id, item.getExpectedUpdatedAt());
-                    contractService.closeContract(id,
-                            new CloseContractRequest(item.getPaidAmount(), item.getComment(), item.isBroken(), item.getActualReturnDate()));
-                }
+                contractService.closeContract(id,
+                        new CloseContractRequest(item.getPaidAmount(), item.getComment(), item.isBroken(), item.getActualReturnDate()));
             }
         }
 
@@ -121,7 +117,17 @@ public class SyncService {
     }
 
     private Long resolveId(Long id, String offlineId) {
-        return id != null ? id : documentRepository.findByOfflineId(offlineId).orElseThrow().getId();
+        if (id != null) {
+            if (offlineId != null && !offlineId.isBlank()) {
+                var doc = documentRepository.findById(id).orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Договор не найден"));
+                if (!offlineId.equals(doc.getOfflineId())) throw new org.misha.authservice.exception.AppException(
+                        "SYNC_ID_MISMATCH", "id и offlineId относятся к разным договорам", org.springframework.http.HttpStatus.CONFLICT);
+            }
+            return id;
+        }
+        if (offlineId == null || offlineId.isBlank()) throw new org.misha.authservice.exception.BadRequestException("Укажите id или offlineId");
+        return documentRepository.findByOfflineId(offlineId)
+                .orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Offline contract has not been created yet")).getId();
     }
     private void checkRevision(Long id, LocalDateTime expected) {
         var doc = documentRepository.findById(id).orElseThrow(() -> new org.misha.authservice.exception.NotFoundException("Договор не найден"));
@@ -133,7 +139,7 @@ public class SyncService {
     public SyncPullResponse pullSync(Instant sinceMillis, Long branchId) {
         return SyncPullResponse.builder()
             .clients(clientRepository.findAll().stream().map(clientMapper::toDtoForDetail).toList())
-            .tools(ToolInstanceRepository.findAllWithTemplate().stream().map(ToolDto::fromEntity).toList())
+            .tools(toolInstanceRepository.findAllWithTemplate().stream().map(ToolDto::fromEntity).toList())
             .categories(categoryRepository.findAll().stream().map(c -> new CategoryDto(c.getId(), c.getName())).toList())
             .templates(templateRepository.findAll().stream().map(t -> new org.misha.authservice.dto.TemplateFullDto(
                 t.getId(), t.getName(), t.getCategory() == null ? null : t.getCategory().getId(),

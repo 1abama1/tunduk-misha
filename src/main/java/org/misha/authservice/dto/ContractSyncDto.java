@@ -15,13 +15,13 @@ public class ContractSyncDto {
 
     @jakarta.validation.Valid
     @jakarta.validation.constraints.Size(max=100)
-    private List<CreateItem> creations;
+    private List<@jakarta.validation.constraints.NotNull CreateItem> creations;
     @jakarta.validation.Valid
     @jakarta.validation.constraints.Size(max=100)
-    private List<UpdateItem> updates;
+    private List<@jakarta.validation.constraints.NotNull UpdateItem> updates;
     @jakarta.validation.Valid
     @jakarta.validation.constraints.Size(max=100)
-    private List<CloseItem> closures;
+    private List<@jakarta.validation.constraints.NotNull CloseItem> closures;
 
     @Data
     public static class CreateItem {
@@ -29,10 +29,14 @@ public class ContractSyncDto {
         @jakarta.validation.constraints.Size(max=100)
         private String offlineId;
         private LocalDateTime startDateTime;
+        @jakarta.validation.constraints.NotNull
+        @jakarta.validation.constraints.Positive
         private Long clientId;
+        @jakarta.validation.constraints.Positive
         private Long toolId;
         @jakarta.validation.constraints.Size(max=10)
         private List<@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Positive Long> toolIds;
+        @jakarta.validation.constraints.Size(max=255)
         private String contractNumber;
     }
 

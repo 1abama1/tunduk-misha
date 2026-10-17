@@ -47,15 +47,9 @@ public class ToolAvailabilityService {
 
     @Transactional(readOnly = true)
     public int getAvailableCount(UUID templateId, LocalDateTime startDate, LocalDateTime endDate) {
+        validatePeriod(startDate, endDate);
         validateTemplate(templateId);
-        long total = toolInstanceRepository.countByTemplateIdAndStatus(templateId, ToolInstanceStatus.AVAILABLE);
-        int busyInRange = rentalDocumentRepository.countBusyToolsByTemplateAndDates(
-                templateId, startDate, endDate);
-        int bookedInRange = toolBookingRepository.countActiveBookingsByTemplateAndDates(
-                templateId, startDate, endDate);
-                
-        int available = (int) (total - busyInRange - bookedInRange);
-        return Math.max(available, 0);
+        return toolInstanceRepository.countAvailableForPeriod(templateId, startDate, endDate);
     }
 
     @Transactional(readOnly = true)
@@ -65,6 +59,7 @@ public class ToolAvailabilityService {
 
     @Transactional(readOnly = true)
     public int getInstanceAvailableCount(Long toolInstanceId, LocalDateTime startDate, LocalDateTime endDate) {
+        validatePeriod(startDate, endDate);
         ToolInstance toolInstance = toolInstanceRepository.findById(toolInstanceId)
                 .orElseThrow(() -> new AppException("INSTANCE_NOT_FOUND", "Instance not found: " + toolInstanceId, HttpStatus.NOT_FOUND));
 
@@ -91,5 +86,10 @@ public class ToolAvailabilityService {
                         "TEMPLATE_NOT_FOUND",
                         "Template not found: " + templateId,
                         HttpStatus.NOT_FOUND));
+    }
+
+    private void validatePeriod(LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null || !start.isBefore(end))
+            throw new org.misha.authservice.exception.BadRequestException("Начало периода должно быть раньше конца");
     }
 }

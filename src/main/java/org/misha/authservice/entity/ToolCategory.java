@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "tool_categories")
 @Getter
 @Setter
@@ -32,6 +33,7 @@ public class ToolCategory {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_category_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"parentCategory", "subCategories", "templates"})
     private ToolCategory parentCategory;
 
     @Column(nullable = false, unique = true)
@@ -44,10 +46,12 @@ public class ToolCategory {
     private java.time.LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "category")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"category", "instances"})
     @Builder.Default
     private Set<ToolTemplate> templates = new HashSet<>();
 
     @OneToMany(mappedBy = "parentCategory")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"parentCategory", "subCategories", "templates"})
     @Builder.Default
     private Set<ToolCategory> subCategories = new HashSet<>();
 }

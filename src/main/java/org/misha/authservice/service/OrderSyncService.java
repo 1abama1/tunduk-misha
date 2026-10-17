@@ -17,7 +17,7 @@ public class OrderSyncService {
     private final OrderRepository orderRepository;
 
     public Page<Order> syncOrders(Trader trader, String since, Long version, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, Math.min(size, 200), org.springframework.data.domain.Sort.by("id"));
 
         if (version != null) {
             throw new org.misha.authservice.exception.BadRequestException("Per-record version cannot be used as a sync cursor; request a full sync without version");
@@ -25,8 +25,8 @@ public class OrderSyncService {
             try {
                 OffsetDateTime sinceDateTime = OffsetDateTime.parse(since);
                 return orderRepository.findByTraderAndUpdatedAfter(trader, sinceDateTime, pageable);
-            } catch (Exception e) {
-                return orderRepository.findByTrader(trader, pageable);
+            } catch (java.time.format.DateTimeParseException e) {
+                throw new org.misha.authservice.exception.BadRequestException("since must be an ISO timestamp with an offset");
             }
         } else {
             return orderRepository.findByTrader(trader, pageable);

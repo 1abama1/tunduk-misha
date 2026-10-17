@@ -136,10 +136,18 @@ public class AdminClientController {
         ClientImage image = clientImageService.getImage(imageId);
 
         String contentType = image.getFileType();
-        MediaType mediaType = contentType != null ? MediaType.parseMediaType(contentType) : MediaType.APPLICATION_OCTET_STREAM;
+        boolean safeImage = java.util.Set.of("image/png", "image/jpeg", "image/gif", "image/webp").contains(
+                contentType == null ? "" : contentType.toLowerCase(java.util.Locale.ROOT));
+        MediaType mediaType = safeImage ? MediaType.parseMediaType(contentType) : MediaType.APPLICATION_OCTET_STREAM;
+        String fileName = image.getFileName() == null ? imageId.toString()
+                : image.getFileName().replaceAll("[\\p{Cntrl}]", "_");
+        var disposition = (safeImage ? org.springframework.http.ContentDisposition.inline()
+                : org.springframework.http.ContentDisposition.attachment())
+                .filename(fileName, java.nio.charset.StandardCharsets.UTF_8).build();
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + (image.getFileName() == null ? imageId : image.getFileName()) + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .header("X-Content-Type-Options", "nosniff")
                 .contentType(mediaType)
                 .body(image.getData());
     }

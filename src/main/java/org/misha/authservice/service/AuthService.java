@@ -29,8 +29,8 @@ public class AuthService {
     private long refreshExpirationMs;
 
     public User register(UserRegistrationDTO dto) {
-        String email = normalize(dto.getEmail());
-        String phone = normalizePhone(dto.getPhone());
+        String email = org.misha.authservice.security.LoginIdentifiers.email(dto.getEmail());
+        String phone = org.misha.authservice.security.LoginIdentifiers.phone(dto.getPhone());
 
         if (email == null && phone == null) {
             throw new AppException("LOGIN_IDENTIFIER_REQUIRED", "Either email or phone must be provided", HttpStatus.BAD_REQUEST);
@@ -54,14 +54,6 @@ public class AuthService {
             // between existsByEmail/existsByPhone pre-check and the insert
             throw new AppException("CONFLICT", "Account with these credentials already exists", HttpStatus.CONFLICT);
         }
-    }
-
-    private String normalize(String value) {
-        return value == null || value.isBlank() ? null : value.trim().toLowerCase();
-    }
-
-    private String normalizePhone(String value) {
-        return value == null || value.isBlank() ? null : value.replaceAll("[\\s()\\-]", "");
     }
 
     public String issueTokenForUser(User user) {

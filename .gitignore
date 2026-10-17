@@ -34,3 +34,4 @@ build/
 .env
 .env.local
 .env.*.local
+/docs/audit/*.log

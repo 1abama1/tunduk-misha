@@ -32,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @AutoConfigureMockMvc(addFilters = false)
 class SyncControllerTest {
 
+    @MockBean
+    private IdempotencyService idempotencyService;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -43,5 +46,15 @@ class SyncControllerTest {
     @Test
     void testContextLoads() {
         assertNotNull(mockMvc);
+    }
+
+    @Test
+    void malformedParametersAndNullBatchItemsAreBadRequests() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/sync/pull"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/sync/contracts")
+                .contentType("application/json").content("{\"creations\":[null]}"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+        org.mockito.Mockito.verifyNoInteractions(syncService, idempotencyService);
     }
 }

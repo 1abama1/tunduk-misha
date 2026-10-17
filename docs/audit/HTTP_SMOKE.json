@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "login": "ok",
+  "catalogCreate": "ok",
+  "clientCreate": "ok",
+  "contractCreate": "ok",
+  "revisionPresent": true,
+  "close": "closed",
+  "excelStatus": 200,
+  "excelBytes": 419273,
+  "fullSnapshot": true,
+  "snapshotContracts": 1,
+  "traderCategoryStatus": 200,
+  "categoryContainsInstances": false
+}

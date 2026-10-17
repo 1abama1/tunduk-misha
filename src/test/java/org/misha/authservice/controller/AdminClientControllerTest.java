@@ -32,6 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @AutoConfigureMockMvc(addFilters = false)
 class AdminClientControllerTest {
 
+    @MockBean
+    private IdempotencyService idempotencyService;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -51,5 +54,17 @@ class AdminClientControllerTest {
     @Test
     void testContextLoads() {
         assertNotNull(mockMvc);
+    }
+
+    @Test
+    void uploadedActiveContentIsDownloadedWithSafeHeaders() throws Exception {
+        org.mockito.Mockito.when(clientImageService.getImage(7L)).thenReturn(
+                org.misha.authservice.entity.ClientImage.builder().fileName("unsafe\r\n.html")
+                        .fileType("text/html").data("<script>alert(1)</script>".getBytes(java.nio.charset.StandardCharsets.UTF_8)).build());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/admin/clients/images/7"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentType("application/octet-stream"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Content-Type-Options", "nosniff"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Content-Disposition", org.hamcrest.Matchers.startsWith("attachment;")));
     }
 }
